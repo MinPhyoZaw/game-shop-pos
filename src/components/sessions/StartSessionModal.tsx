@@ -72,17 +72,6 @@ export default function StartSessionModal({
             label="Game"
             onChange={(e) => setGame(e.target.value as string)}
             sx={{ borderRadius: 2 }}
-            MenuProps={(
-              {
-                disablePortal: true,
-                MenuListProps: {
-                  sx: {
-                    maxHeight: "40vh",
-                    overflow: "auto",
-                  },
-                },
-              } as any
-            )}
           >
             {games.map((g) => (
               <MenuItem key={g} value={g}>

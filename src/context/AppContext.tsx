@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState } from "react";
 
-type Page = "Dashboard" | "Sessions" | "Products" | "Games" | "Reports" | "Settings";
+export type Page = "Dashboard" | "Sessions" | "Products" | "Games" | "Reports" | "Settings";
 
 interface AppContextValue {
   page: Page;

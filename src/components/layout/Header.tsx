@@ -1,31 +1,30 @@
 import { TextField } from "@mui/material";
+import { useEffect, useState } from "react";
 
 export default function Header() {
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(new Date()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+
   return (
-    <div
-      style={{
-        height: 80,
-        background: "#fff",
-        borderBottom: "1px solid #e5e7eb",
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        padding: "0 24px",
-      }}
-    >
-      <div>
-        <div>Cashier</div>
+    <header className="topbar">
+      <div className="cashier-card">
+        <span>Cashier</span>
         <strong>John Doe</strong>
       </div>
 
       <TextField
         size="small"
-        placeholder="Search..."
+        placeholder="Search stations, games, products..."
+        className="topbar-search"
       />
 
-      <div>
-        {new Date().toLocaleString()}
-      </div>
-    </div>
+      <time className="topbar-time" dateTime={now.toISOString()}>
+        {now.toLocaleString()}
+      </time>
+    </header>
   );
 }

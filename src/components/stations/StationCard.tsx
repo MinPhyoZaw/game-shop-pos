@@ -7,7 +7,7 @@ import {
   Typography,
   Box,
 } from "@mui/material";
-import { useSessions } from "../../context/SessionContext";
+import { type ActiveSession, useSessions } from "../../context/SessionContext";
 
 interface Props {
   code: string;
@@ -18,15 +18,15 @@ interface Props {
 export default function StationCard({ code, type, onStart }: Props) {
   const { sessions, removeSession } = useSessions();
   const session = sessions.find((s) => s.stationCode === code);
-  const [, setTick] = useState(0);
+  const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
     if (!session) return;
-    const id = setInterval(() => setTick((t) => t + 1), 1000);
+    const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, [session]);
 
-  const elapsedMs = session ? Date.now() - session.startTime : 0;
+  const elapsedMs = session ? now - session.startTime : 0;
   const seconds = Math.floor(elapsedMs / 1000) % 60;
   const minutes = Math.floor(elapsedMs / 60000) % 60;
   const hours = Math.floor(elapsedMs / 3600000);
@@ -83,7 +83,7 @@ function StationCardActions({
   estimatedCost,
   onCloseSession,
 }: {
-  session: any;
+  session: ActiveSession;
   elapsed: string;
   estimatedCost: number;
   onCloseSession: () => void;
