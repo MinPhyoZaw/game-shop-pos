@@ -6,6 +6,7 @@ import {
   FileText,
   Settings,
 } from "lucide-react";
+import { useApp } from "../../context/AppContext";
 
 const menus = [
   { icon: LayoutDashboard, label: "Dashboard" },
@@ -17,6 +18,8 @@ const menus = [
 ];
 
 export default function Sidebar() {
+  const { page, setPage } = useApp();
+
   return (
     <div
       style={{
@@ -36,6 +39,7 @@ export default function Sidebar() {
           return (
             <div
               key={item.label}
+              onClick={() => setPage(item.label as any)}
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -44,9 +48,7 @@ export default function Sidebar() {
                 borderRadius: 12,
                 marginBottom: 10,
                 cursor: "pointer",
-                background: item.label === "Dashboard"
-                  ? "#eef2ff"
-                  : "transparent",
+                background: item.label === page ? "#eef2ff" : "transparent",
               }}
             >
               <Icon size={20} />
