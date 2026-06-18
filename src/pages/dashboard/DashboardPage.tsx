@@ -13,39 +13,19 @@ export default function DashboardPage() {
 
   return (
     <>
-      <h1
-        style={{
-          marginBottom: "8px",
-        }}
-      >
-        Station Dashboard
-      </h1>
+      <h1 className="page-title">Station Dashboard</h1>
 
-      <p
-        style={{
-          color: "#6b7280",
-          marginBottom: "24px",
-        }}
-      >
-        Monitor and manage all gaming stations
-      </p>
+      <p className="page-subtitle">Monitor and manage all gaming stations</p>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns:
-            "repeat(auto-fill, minmax(320px, 1fr))",
-          gap: "24px",
-        }}
-      >
-       <StationCard
-  code="PS4-1"
-  type="PS4"
-  onStart={() => {
-    setSelectedStation({ code: "PS4-1", type: "PS4" });
-    setOpen(true);
-  }}
-/>
+      <div className="stations-grid">
+        <StationCard
+          code="PS4-1"
+          type="PS4"
+          onStart={() => {
+            setSelectedStation({ code: "PS4-1", type: "PS4" });
+            setOpen(true);
+          }}
+        />
 
         <StationCard
           code="PS4-2"

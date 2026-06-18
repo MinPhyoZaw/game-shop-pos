@@ -6,7 +6,7 @@ import {
   FileText,
   Settings,
 } from "lucide-react";
-import { useApp } from "../../context/AppContext";
+import { type Page, useApp } from "../../context/AppContext";
 
 const menus = [
   { icon: LayoutDashboard, label: "Dashboard" },
@@ -21,42 +21,33 @@ export default function Sidebar() {
   const { page, setPage } = useApp();
 
   return (
-    <div
-      style={{
-        width: 280,
-        background: "#fff",
-        borderRight: "1px solid #e5e7eb",
-        height: "100vh",
-        padding: 20,
-      }}
-    >
-      <h2>Game Shop POS</h2>
+    <aside className="sidebar">
+      <div className="brand">
+        <div className="brand-mark">GS</div>
+        <div>
+          <h2>Game Shop POS</h2>
+          <span>Counter console</span>
+        </div>
+      </div>
 
-      <div style={{ marginTop: 30 }}>
+      <nav className="sidebar-nav" aria-label="Main navigation">
         {menus.map((item) => {
           const Icon = item.icon;
+          const isActive = item.label === page;
 
           return (
-            <div
+            <button
               key={item.label}
-              onClick={() => setPage(item.label as any)}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 12,
-                padding: "14px 16px",
-                borderRadius: 12,
-                marginBottom: 10,
-                cursor: "pointer",
-                background: item.label === page ? "#eef2ff" : "transparent",
-              }}
+              type="button"
+              onClick={() => setPage(item.label as Page)}
+              className={isActive ? "nav-item active" : "nav-item"}
             >
               <Icon size={20} />
               <span>{item.label}</span>
-            </div>
+            </button>
           );
         })}
-      </div>
-    </div>
+      </nav>
+    </aside>
   );
 }

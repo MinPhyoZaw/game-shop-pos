@@ -7,16 +7,14 @@ interface Props {
 
 export default function MainLayout({ children }: Props) {
   return (
-    <div style={{ display: "flex" }}>
+    <div className="app-shell">
       <Sidebar />
 
-      <div style={{ flex: 1 }}>
+      <main className="app-main">
         <Header />
 
-        <div style={{ padding: 20 }}>
-          {children}
-        </div>
-      </div>
+        <div className="app-content">{children}</div>
+      </main>
     </div>
   );
 }

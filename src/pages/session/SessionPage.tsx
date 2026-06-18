@@ -3,14 +3,14 @@ import { useSessions } from "../../context/SessionContext";
 import { useEffect, useState } from "react";
 
 function Duration({ start }: { start: number }) {
-  const [, setTick] = useState(0);
+  const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
-    const id = setInterval(() => setTick((t) => t + 1), 1000);
+    const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, []);
 
-  const diff = Date.now() - start;
+  const diff = now - start;
   const sec = Math.floor(diff / 1000) % 60;
   const min = Math.floor(diff / 60000) % 60;
   const hr = Math.floor(diff / 3600000);
@@ -29,19 +29,17 @@ export default function SessionPage() {
 
   return (
     <div>
-      <Typography variant="h4">Active Sessions</Typography>
-      <Typography color="text.secondary" sx={{ mb: 2 }}>
-        View all active sessions
-      </Typography>
+      <h1 className="page-title">Active Sessions</h1>
+      <p className="page-subtitle">View all active sessions</p>
 
-      <Box sx={{ display: "grid", gap: 12 }}>
+      <Box sx={{ display: "grid", gap: 2 }}>
         {sessions.length === 0 && (
-          <Typography color="text.secondary">No active sessions</Typography>
+          <div className="empty-state">No active sessions</div>
         )}
 
         {sessions.map((s) => (
           <Card key={s.id} sx={{ borderRadius: 2 }}>
-            <CardContent sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <CardContent sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 2, flexWrap: "wrap" }}>
               <div>
                 <Typography variant="h6">{s.stationCode}</Typography>
                 <Typography color="text.secondary">{s.game}</Typography>
