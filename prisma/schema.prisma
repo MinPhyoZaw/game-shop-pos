@@ -1,0 +1,96 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./game-shop.db"
+}
+
+model Station {
+  id            Int      @id @default(autoincrement())
+  code          String   @unique
+  type          String
+  hourlyRateMmk Int
+  isActive      Boolean  @default(true)
+
+  sessions      Session[]
+}
+
+model Game {
+  id        Int       @id @default(autoincrement())
+  name      String    @unique
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+
+  sessions  Session[]
+}
+
+model Product {
+  id        Int       @id @default(autoincrement())
+  name      String    @unique
+  priceMmk  Int
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+
+  sessionItems SessionItem[]
+}
+
+model Session {
+  id                     Int      @id @default(autoincrement())
+
+  stationId              Int
+  gameId                 Int
+
+
+  note                   String?
+
+  startTime              DateTime
+  endTime                DateTime?
+
+  hourlyRateMmkSnapshot  Int
+
+  durationMinutes        Int?
+  playCostMmk            Int?
+
+  status                 String
+
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  station                Station @relation(fields: [stationId], references: [id])
+  game                   Game    @relation(fields: [gameId], references: [id])
+
+  sessionItems           SessionItem[]
+  payments               Payment[]
+}
+
+model SessionItem {
+  id                    Int      @id @default(autoincrement())
+
+  sessionId             Int
+  productId             Int
+
+  qty                   Int
+
+  unitPriceMmkSnapshot  Int
+  lineTotalMmk          Int
+
+  createdAt             DateTime @default(now())
+
+  session               Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  product               Product @relation(fields: [productId], references: [id])
+}
+
+model Payment {
+  id         Int      @id @default(autoincrement())
+
+  sessionId  Int
+
+  method     String
+  amountMmk  Int
+
+  paidAt     DateTime @default(now())
+
+  session    Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+}
