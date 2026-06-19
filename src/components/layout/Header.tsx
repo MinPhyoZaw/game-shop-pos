@@ -13,7 +13,7 @@ export default function Header() {
     <header className="topbar">
       <div className="cashier-card">
         <span>Cashier</span>
-        <strong>John Doe</strong>
+        <strong>Zin Min Oo</strong>
       </div>
 
       <TextField

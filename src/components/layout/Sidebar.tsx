@@ -25,7 +25,7 @@ export default function Sidebar() {
       <div className="brand">
         <div className="brand-mark">GS</div>
         <div>
-          <h2>Game Shop POS</h2>
+          <h2>TK Family Game  POS </h2>
           <span>Counter console</span>
         </div>
       </div>
