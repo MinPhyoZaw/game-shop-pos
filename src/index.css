@@ -22,6 +22,11 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+@font-face {
+  font-family: "PS4Font";
+  src: url("./assets/fonts/PhatboyslimBolditalic-2DXw.otf")
+    format("opentype");
+}
 * {
   box-sizing: border-box;
 }

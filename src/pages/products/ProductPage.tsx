@@ -2,8 +2,6 @@ import {
   Box,
   Button,
   Card,
-  CardActions,
-  CardContent,
   Chip,
   Dialog,
   DialogActions,
@@ -129,46 +127,128 @@ export default function ProductPage() {
       </Box>
 
       <Box
+  sx={{
+    display: "flex",
+    flexDirection: "column",
+    gap: 1,
+  }}
+>
+  {/* Header */}
+  <Card
+    sx={{
+      borderRadius: 3,
+      bgcolor: "primary.main",
+      color: "white",
+    }}
+  >
+    <Box
+      sx={{
+        display: "grid",
+        gridTemplateColumns: {
+          xs: "1fr",
+          md: "80px 1fr 180px 220px",
+        },
+        alignItems: "center",
+        gap: 2,
+        px: 3,
+        py: 2,
+      }}
+    >
+      <Typography fontWeight={700}>ID</Typography>
+      <Typography fontWeight={700}>Product Name</Typography>
+      <Typography fontWeight={700}>Price</Typography>
+      <Typography fontWeight={700}>Actions</Typography>
+    </Box>
+  </Card>
+
+  {/* Product Rows */}
+  {products.map((product) => (
+    <Card
+      key={product.id}
+      sx={{
+        borderRadius: 3,
+        transition: "all 0.2s ease",
+        "&:hover": {
+          boxShadow: 4,
+          transform: "translateY(-1px)",
+        },
+      }}
+    >
+      <Box
         sx={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
+          gridTemplateColumns: {
+            xs: "1fr",
+            md: "80px 1fr 180px 220px",
+          },
+          alignItems: "center",
           gap: 2,
+          px: 3,
+          py: 2,
         }}
       >
-        {products.map((product) => (
-          <Card key={product.id} sx={{ borderRadius: 3, height: "100%" }}>
-            <CardContent>
-              <Box sx={{ display: "flex", justifyContent: "space-between", gap: 1 }}>
-                <Typography variant="h6">{product.name}</Typography>
-                <Chip label={`#${product.id}`} size="small" />
-              </Box>
-              <Typography color="text.secondary" sx={{ mt: 1 }}>
-                {product.priceMmk.toLocaleString()} MMK
-              </Typography>
-            </CardContent>
+        {/* Product ID */}
+        <Chip
+          label={`#${product.id}`}
+          size="small"
+          sx={{
+            width: "fit-content",
+            fontWeight: 600,
+          }}
+        />
 
-            <CardActions sx={{ px: 2, pb: 2 }}>
-              <Button
-                variant="outlined"
-                size="small"
-                startIcon={<EditIcon />}
-                onClick={() => openEditProduct(product)}
-              >
-                Edit
-              </Button>
-              <Button
-                color="error"
-                variant="outlined"
-                size="small"
-                startIcon={<DeleteIcon />}
-                onClick={() => deleteProduct(product.id)}
-              >
-                Delete
-              </Button>
-            </CardActions>
-          </Card>
-        ))}
+        {/* Product Name */}
+        <Typography
+          fontWeight={600}
+          sx={{
+            fontSize: "1rem",
+          }}
+        >
+          {product.name}
+        </Typography>
+
+        {/* Price */}
+        <Typography
+          sx={{
+            color: "success.main",
+            fontWeight: 700,
+            fontSize: "1rem",
+          }}
+        >
+          {product.priceMmk.toLocaleString()} MMK
+        </Typography>
+
+        {/* Actions */}
+        <Box
+          sx={{
+            display: "flex",
+            gap: 1,
+            flexWrap: "wrap",
+          }}
+        >
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={<EditIcon />}
+            onClick={() => openEditProduct(product)}
+          >
+            Edit
+          </Button>
+
+          <Button
+            color="error"
+            variant="outlined"
+            size="small"
+            startIcon={<DeleteIcon />}
+            onClick={() => deleteProduct(product.id)}
+          >
+            Delete
+          </Button>
+        </Box>
       </Box>
+    </Card>
+  ))}
+</Box>
 
       {products.length === 0 && (
         <div className="empty-state">No products yet. Add your first product.</div>

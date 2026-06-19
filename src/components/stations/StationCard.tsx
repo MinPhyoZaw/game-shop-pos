@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Gamepad2 } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -6,8 +7,16 @@ import {
   Chip,
   Typography,
   Box,
+  Alert,
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from "@mui/material";
-import { type ActiveSession, useSessions } from "../../context/SessionContext";
+import CloseIcon from "@mui/icons-material/Close";
+import type { ActiveSession } from "../../context/SessionContext";
+import { useSessions } from "../../context/SessionContext";
 
 interface Props {
   code: string;
@@ -34,13 +43,37 @@ export default function StationCard({ code, type, onStart }: Props) {
     .toString()
     .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
 
-  const ratePerMinute = type === "PS4" ? 50 : type === "PS3" ? Math.round(2000 / 60) : 0;
-  const estimatedCost = session ? (Math.ceil(elapsedMs / 60000) * ratePerMinute) : 0;
+  const ratePerMinute =
+    type === "PS4" ? 50 : type === "PS3" ? Math.round(2000 / 60) : 0;
+  const estimatedCost = session
+    ? Math.ceil(elapsedMs / 60000) * ratePerMinute
+    : 0;
 
   return (
     <Card sx={{ borderRadius: 4 }}>
       <CardContent>
-        <Typography variant="h5">{code}</Typography>
+        <Box
+  sx={{
+    display: "flex",
+    alignItems: "center",
+    gap: 1,
+  }}
+>
+  <Gamepad2
+    size={28}
+    color="#003791"
+  />
+
+  <Typography
+    variant="h5"
+    sx={{
+      fontFamily: "PS4Font",
+      fontSize: "2rem",
+    }}
+  >
+    {code}
+  </Typography>
+</Box>
 
         <Box sx={{ display: "flex", gap: 1, mt: 1, alignItems: "center" }}>
           <Chip label={type} color={type === "PS4" ? "primary" : "secondary"} />
@@ -89,9 +122,37 @@ function StationCardActions({
   onCloseSession: () => void;
 }) {
   const [openPane, setOpenPane] = useState(false);
+  const { dismissPreAlert } = useSessions();
+  const [openEndedDialog, setOpenEndedDialog] = useState(false);
+  const [openCheckout, setOpenCheckout] = useState(false);
+  const [checkoutDone, setCheckoutDone] = useState(false);
+
+  // open ended dialog when session status becomes ended
+  useEffect(() => {
+    if (session.status === "ended") setOpenEndedDialog(true);
+  }, [session.status]);
   return (
     <>
       <Box sx={{ mt: 2 }}>
+        {/* Pre-alert box shown 5 minutes before auto-end */}
+        {session.preAlert && !session.alertDismissed && session.endTime && (
+          <Alert
+            severity="warning"
+            action={
+              <IconButton
+                size="small"
+                onClick={() => dismissPreAlert(session.id)}
+              >
+                <CloseIcon fontSize="small" />
+              </IconButton>
+            }
+            sx={{ mb: 1 }}
+          >
+            {session.stationCode} will be closed in{" "}
+            {Math.max(0, Math.ceil((session.endTime - Date.now()) / 1000))}{" "}
+            seconds
+          </Alert>
+        )}
         <Typography variant="subtitle2">{session.game}</Typography>
         <Typography variant="body2" color="text.secondary">
           Elapsed: {elapsed}
@@ -110,17 +171,119 @@ function StationCardActions({
         </Box>
 
         <Box sx={{ display: "flex", gap: 1, mt: 1 }}>
-          <Button variant="contained" fullWidth onClick={() => setOpenPane(true)}>
+          <Button
+            variant="contained"
+            fullWidth
+            onClick={() => setOpenPane(true)}
+          >
             Add Item
           </Button>
 
-          <Button variant="outlined" fullWidth color="error" onClick={onCloseSession}>
+          <Button
+            variant="outlined"
+            fullWidth
+            color="error"
+            onClick={() => setOpenCheckout(true)}
+          >
             Close
           </Button>
         </Box>
       </Box>
 
-      <ProductsPane open={openPane} onClose={() => setOpenPane(false)} stationCode={session.stationCode} />
+      <ProductsPane
+        open={openPane}
+        onClose={() => setOpenPane(false)}
+        stationCode={session.stationCode}
+      />
+
+      <Dialog open={openEndedDialog} onClose={() => setOpenEndedDialog(false)}>
+        <DialogTitle>Session Ended</DialogTitle>
+        <DialogContent>
+          <Typography>
+            {session.stationCode} session time is up. Do checkout or cancel.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setOpenEndedDialog(false);
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={() => {
+              setOpenEndedDialog(false);
+              setOpenCheckout(true);
+            }}
+          >
+            Checkout
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={openCheckout}
+        onClose={() => setOpenCheckout(false)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>Checkout</DialogTitle>
+        <DialogContent>
+          {(() => {
+            const elapsedMs = Date.now() - session.startTime;
+            const minutes = Math.ceil(elapsedMs / 60000);
+            const ratePerMinute =
+              session.stationType === "PS4"
+                ? 50
+                : session.stationType === "PS3"
+                  ? Math.round(2000 / 60)
+                  : 0;
+            const playCost = minutes * ratePerMinute;
+            const itemsTotal = session.itemsTotalMmk || 0;
+            const totalAmount = playCost + itemsTotal;
+
+            return (
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                <Typography>Station: {session.stationCode}</Typography>
+                <Typography>Game: {session.game}</Typography>
+                <Typography>
+                  Play Cost: {playCost.toLocaleString()} MMK
+                </Typography>
+                <Typography>
+                  Items Total: {itemsTotal.toLocaleString()} MMK
+                </Typography>
+                <Typography variant="h6">
+                  Total: {totalAmount.toLocaleString()} MMK
+                </Typography>
+              </Box>
+            );
+          })()}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenCheckout(false)}>Cancel</Button>
+          {!checkoutDone && (
+            <Button variant="contained" onClick={() => setCheckoutDone(true)}>
+              Checkout
+            </Button>
+          )}
+          {checkoutDone && (
+            <Button
+              color="error"
+              variant="contained"
+              onClick={() => {
+                onCloseSession();
+                setOpenCheckout(false);
+                setCheckoutDone(false);
+              }}
+            >
+              Confirm Close
+            </Button>
+          )}
+        </DialogActions>
+      </Dialog>
     </>
   );
 }

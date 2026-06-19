@@ -1,4 +1,6 @@
 import { Box, Typography, Card, CardContent, Button, Divider, Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
+import { Alert, IconButton } from "@mui/material";
+import CloseIcon from '@mui/icons-material/Close';
 import { useSessions } from "../../context/SessionContext";
 import { useEffect, useState } from "react";
 
@@ -19,6 +21,7 @@ function Duration({ start, now }: { start: number; now: number }) {
 
 export default function SessionPage() {
   const { sessions, removeSession } = useSessions();
+  const { dismissPreAlert } = useSessions();
   const [checkoutSessionId, setCheckoutSessionId] = useState<string | null>(null);
   const [checkoutDone, setCheckoutDone] = useState(false);
   const [now, setNow] = useState(() => Date.now());
@@ -27,6 +30,15 @@ export default function SessionPage() {
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, []);
+
+  // auto-open checkout when any session is marked ended
+  useEffect(() => {
+    const ended = sessions.find((s) => s.status === "ended");
+    if (ended) {
+      setCheckoutSessionId(ended.id);
+      setCheckoutDone(false);
+    }
+  }, [sessions]);
 
   const openCheckout = (id: string) => {
     setCheckoutSessionId(id);
@@ -51,6 +63,23 @@ export default function SessionPage() {
       </Typography>
 
       <Box sx={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 2 }}>
+        {/* Pre-alert notifications */}
+        {sessions
+          .filter((s) => s.preAlert && !s.alertDismissed)
+          .map((s) => (
+            <Alert
+              key={`prealert-${s.id}`}
+              severity="warning"
+              action={
+                <IconButton size="small" onClick={() => dismissPreAlert(s.id)}>
+                  <CloseIcon fontSize="small" />
+                </IconButton>
+              }
+              sx={{ gridColumn: "1 / -1", mb: 1 }}
+            >
+              {s.stationCode} will be closed in {Math.max(0, Math.ceil((s.endTime! - now) / 1000))} seconds
+            </Alert>
+          ))}
         {sessions.length === 0 && (
           <Typography color="text.secondary">No active sessions</Typography>
         )}

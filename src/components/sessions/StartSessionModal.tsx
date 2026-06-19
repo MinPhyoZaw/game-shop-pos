@@ -11,6 +11,7 @@ import {
   MenuItem,
   Box,
   Typography,
+  Stack,
 } from "@mui/material";
 import { useEffect, useState } from "react";
 import { getGames } from "../../services/gameService";
@@ -32,6 +33,10 @@ export default function StartSessionModal({
   const [games, setGames] = useState<string[]>([]);
   const [game, setGame] = useState("");
   const [note, setNote] = useState("");
+  const [hours, setHours] = useState(0);
+  const [minutes, setMinutes] = useState(0);
+
+  const { addSession } = useSessions();
 
   useEffect(() => {
     getGames().then(setGames);
@@ -44,12 +49,20 @@ export default function StartSessionModal({
       ? 2000
       : 0;
 
-  const { addSession } = useSessions();
+  const totalMinutes = hours * 60 + minutes;
+
+  const handleClose = () => {
+    setGame("");
+    setNote("");
+    setHours(0);
+    setMinutes(0);
+    onClose();
+  };
 
   return (
     <Dialog
       open={open}
-      onClose={onClose}
+      onClose={handleClose}
       fullWidth
       maxWidth="sm"
     >
@@ -57,20 +70,19 @@ export default function StartSessionModal({
         Start Session {stationCode ? `- ${stationCode}` : ""}
       </DialogTitle>
 
-      <DialogContent
-        dividers
-        sx={{
-          overflowY: "auto",
-        }}
-      >
+      <DialogContent dividers>
         <FormControl fullWidth margin="normal">
-          <InputLabel id="game-select-label">Game</InputLabel>
+          <InputLabel id="game-select-label">
+            Game
+          </InputLabel>
 
           <Select
             labelId="game-select-label"
             value={game}
             label="Game"
-            onChange={(e) => setGame(e.target.value as string)}
+            onChange={(e) =>
+              setGame(e.target.value as string)
+            }
             sx={{ borderRadius: 2 }}
           >
             {games.map((g) => (
@@ -81,13 +93,133 @@ export default function StartSessionModal({
           </Select>
         </FormControl>
 
+        <Typography
+          variant="subtitle2"
+          sx={{ mt: 2, mb: 1 }}
+        >
+          Session Timer
+        </Typography>
+
+        <Stack
+          direction="row"
+          spacing={1}
+          flexWrap="wrap"
+          sx={{ mb: 2 }}
+        >
+          <Button
+            size="small"
+            onClick={() => {
+              setHours(0);
+              setMinutes(30);
+            }}
+          >
+            30m
+          </Button>
+
+          <Button
+            size="small"
+            onClick={() => {
+              setHours(0);
+              setMinutes(45);
+            }}
+          >
+            45m
+          </Button>
+
+          <Button
+            size="small"
+            onClick={() => {
+              setHours(1);
+              setMinutes(0);
+            }}
+          >
+            1h
+          </Button>
+
+          <Button
+            size="small"
+            onClick={() => {
+              setHours(1);
+              setMinutes(30);
+            }}
+          >
+            1h 30m
+          </Button>
+
+          <Button
+            size="small"
+            onClick={() => {
+              setHours(2);
+              setMinutes(0);
+            }}
+          >
+            2h
+          </Button>
+        </Stack>
+
+        <Box
+          sx={{
+            display: "flex",
+            gap: 2,
+          }}
+        >
+          <TextField
+            fullWidth
+            label="Hours"
+            type="number"
+            value={hours}
+            onChange={(e) =>
+              setHours(
+                Math.max(
+                  0,
+                  Number(e.target.value) || 0
+                )
+              )
+            }
+            inputProps={{
+              min: 0,
+            }}
+          />
+
+          <TextField
+            fullWidth
+            label="Minutes"
+            type="number"
+            value={minutes}
+            onChange={(e) =>
+              setMinutes(
+                Math.min(
+                  59,
+                  Math.max(
+                    0,
+                    Number(e.target.value) || 0
+                  )
+                )
+              )
+            }
+            inputProps={{
+              min: 0,
+              max: 59,
+            }}
+          />
+        </Box>
+
+        <Typography
+          variant="body2"
+          color="text.secondary"
+          sx={{ mt: 1 }}
+        >
+          Duration: {hours}h {minutes}m
+        </Typography>
+
         <TextField
           fullWidth
           label="Note (optional)"
           margin="normal"
           value={note}
-          onChange={(e) => setNote(e.target.value)}
-          variant="outlined"
+          onChange={(e) =>
+            setNote(e.target.value)
+          }
         />
 
         <Box
@@ -101,18 +233,23 @@ export default function StartSessionModal({
             gap: 0.5,
           }}
         >
-          <Typography variant="subtitle2" color="text.secondary">
+          <Typography
+            variant="subtitle2"
+            color="text.secondary"
+          >
             Rate
           </Typography>
 
           <Typography variant="h6">
-            {rate > 0 ? `${rate.toLocaleString()} MMK/hr` : "—"}
+            {rate > 0
+              ? `${rate.toLocaleString()} MMK/hr`
+              : "—"}
           </Typography>
         </Box>
       </DialogContent>
 
       <DialogActions>
-        <Button onClick={onClose}>
+        <Button onClick={handleClose}>
           Cancel
         </Button>
 
@@ -121,8 +258,21 @@ export default function StartSessionModal({
           disabled={!game}
           onClick={() => {
             if (!game || !stationCode) return;
-            addSession({ stationCode, stationType, game, note });
-            onClose();
+
+            const durationMinutes =
+              totalMinutes > 0
+                ? totalMinutes
+                : undefined;
+
+            addSession({
+              stationCode,
+              stationType,
+              game,
+              note,
+              durationMinutes,
+            });
+
+            handleClose();
           }}
         >
           Start Session
