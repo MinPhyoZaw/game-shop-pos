@@ -2,15 +2,8 @@ import { Box, Typography, Card, CardContent, Button, Divider, Dialog, DialogTitl
 import { useSessions } from "../../context/SessionContext";
 import { useEffect, useState } from "react";
 
-function Duration({ start }: { start: number }) {
-  const [, setTick] = useState(0);
-
-  useEffect(() => {
-    const id = setInterval(() => setTick((t) => t + 1), 1000);
-    return () => clearInterval(id);
-  }, []);
-
-  const diff = Date.now() - start;
+function Duration({ start, now }: { start: number; now: number }) {
+  const diff = now - start;
   const sec = Math.floor(diff / 1000) % 60;
   const min = Math.floor(diff / 60000) % 60;
   const hr = Math.floor(diff / 3600000);
@@ -28,6 +21,12 @@ export default function SessionPage() {
   const { sessions, removeSession } = useSessions();
   const [checkoutSessionId, setCheckoutSessionId] = useState<string | null>(null);
   const [checkoutDone, setCheckoutDone] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
 
   const openCheckout = (id: string) => {
     setCheckoutSessionId(id);
@@ -57,7 +56,7 @@ export default function SessionPage() {
         )}
 
         {sessions.map((s) => {
-          const elapsedMs = Date.now() - s.startTime;
+          const elapsedMs = now - s.startTime;
           const minutes = Math.ceil(elapsedMs / 60000);
           const ratePerMinute = s.stationType === "PS4" ? 50 : s.stationType === "PS3" ? Math.round(2000 / 60) : 0;
           const playCost = minutes * ratePerMinute;
@@ -79,9 +78,9 @@ export default function SessionPage() {
                   <Divider sx={{ my: 1 }} />
 
                   <Typography>Duration</Typography>
-                  <Typography color="text.secondary"><Duration start={s.startTime} /></Typography>
+                  <Typography color="text.secondary"><Duration start={s.startTime} now={now} /></Typography>
 
-                  <Typography sx={{ mt: 1 }}>Item / Product qty: {s.items.reduce((a:any,b:any)=>a+b.qty,0)}</Typography>
+                  <Typography sx={{ mt: 1 }}>Item / Product qty: {s.items.reduce((total, item) => total + item.qty, 0)}</Typography>
                   <Typography>Total amount: {totalAmount.toLocaleString()} MMK</Typography>
 
                   <Box sx={{ display: "flex", gap: 1, mt: 2 }}>
@@ -103,7 +102,7 @@ export default function SessionPage() {
           <DialogContent>
             {checkoutSessionId && (() => {
               const s = sessions.find(x => x.id === checkoutSessionId)!;
-              const elapsedMs = Date.now() - s.startTime;
+              const elapsedMs = now - s.startTime;
               const minutes = Math.ceil(elapsedMs / 60000);
               const ratePerMinute = s.stationType === "PS4" ? 50 : s.stationType === "PS3" ? Math.round(2000 / 60) : 0;
               const playCost = minutes * ratePerMinute;
