@@ -1,27 +1,12 @@
-import { Box, Typography, Card, CardContent, Button, Divider, Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
-import { Alert, IconButton } from "@mui/material";
+import { Box, Typography, Alert, IconButton } from "@mui/material";
 import CloseIcon from '@mui/icons-material/Close';
 import { useSessions } from "../../context/SessionContext";
 import { useEffect, useState } from "react";
-
-function Duration({ start, now }: { start: number; now: number }) {
-  const diff = now - start;
-  const sec = Math.floor(diff / 1000) % 60;
-  const min = Math.floor(diff / 60000) % 60;
-  const hr = Math.floor(diff / 3600000);
-
-  return (
-    <span>
-      {hr.toString().padStart(2, "0")}:{min.toString().padStart(2, "0")}:{sec
-        .toString()
-        .padStart(2, "0")}
-    </span>
-  );
-}
+import SessionCard from "./SessionCard";
+import CheckoutDialog from "./CheckoutDialog";
 
 export default function SessionPage() {
-  const { sessions, removeSession } = useSessions();
-  const { dismissPreAlert } = useSessions();
+  const { sessions, removeSession, dismissPreAlert } = useSessions();
   const [checkoutSessionId, setCheckoutSessionId] = useState<string | null>(null);
   const [checkoutDone, setCheckoutDone] = useState(false);
   const [now, setNow] = useState(() => Date.now());
@@ -31,7 +16,6 @@ export default function SessionPage() {
     return () => clearInterval(id);
   }, []);
 
-  // auto-open checkout when any session is marked ended
   useEffect(() => {
     const ended = sessions.find((s) => s.status === "ended");
     if (ended) {
@@ -51,9 +35,10 @@ export default function SessionPage() {
   };
 
   const performCheckout = () => {
-    // Simulate checkout processing
     setCheckoutDone(true);
   };
+
+  const checkoutSession = sessions.find(x => x.id === checkoutSessionId);
 
   return (
     <div>
@@ -63,7 +48,6 @@ export default function SessionPage() {
       </Typography>
 
       <Box sx={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 2 }}>
-        {/* Pre-alert notifications */}
         {sessions
           .filter((s) => s.preAlert && !s.alertDismissed)
           .map((s) => (
@@ -84,90 +68,19 @@ export default function SessionPage() {
           <Typography color="text.secondary">No active sessions</Typography>
         )}
 
-        {sessions.map((s) => {
-          const elapsedMs = now - s.startTime;
-          const minutes = Math.ceil(elapsedMs / 60000);
-          const ratePerMinute = s.stationType === "PS4" ? 50 : s.stationType === "PS3" ? Math.round(2000 / 60) : 0;
-          const playCost = minutes * ratePerMinute;
-          const itemsTotal = s.itemsTotalMmk || 0;
-          const totalAmount = playCost + itemsTotal;
+        {sessions.map((s) => (
+          <SessionCard key={s.id} session={s} now={now} onCheckout={openCheckout} />
+        ))}
 
-          return (
-            <Card key={s.id} sx={{ borderRadius: 2 }}>
-              <CardContent>
-                <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-                  <Typography variant="h6">{s.stationCode}</Typography>
-                  <Typography color="text.secondary">{s.stationType}</Typography>
-
-                  <Typography variant="body2">Started Time</Typography>
-                  <Typography color="text.secondary">{new Date(s.startTime).toLocaleString()}</Typography>
-
-                  <Typography sx={{ mt: 1 }}>Game name: <strong>{s.game}</strong></Typography>
-
-                  <Divider sx={{ my: 1 }} />
-
-                  <Typography>Duration</Typography>
-                  <Typography color="text.secondary"><Duration start={s.startTime} now={now} /></Typography>
-
-                  <Typography sx={{ mt: 1 }}>Item / Product qty: {s.items.reduce((total, item) => total + item.qty, 0)}</Typography>
-                  <Typography>Total amount: {totalAmount.toLocaleString()} MMK</Typography>
-
-                  <Box sx={{ display: "flex", gap: 1, mt: 2 }}>
-                    <Button variant="contained" color="primary" onClick={() => openCheckout(s.id)}>
-                      Close
-                    </Button>
-                    <Button variant="outlined" color="secondary" onClick={() => openCheckout(s.id)}>
-                      Checkout
-                    </Button>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          );
-        })}
-
-        <Dialog open={!!checkoutSessionId} onClose={closeCheckout} maxWidth="xs" fullWidth>
-          <DialogTitle>Checkout</DialogTitle>
-          <DialogContent>
-            {checkoutSessionId && (() => {
-              const s = sessions.find(x => x.id === checkoutSessionId)!;
-              const elapsedMs = now - s.startTime;
-              const minutes = Math.ceil(elapsedMs / 60000);
-              const ratePerMinute = s.stationType === "PS4" ? 50 : s.stationType === "PS3" ? Math.round(2000 / 60) : 0;
-              const playCost = minutes * ratePerMinute;
-              const itemsTotal = s.itemsTotalMmk || 0;
-              const totalAmount = playCost + itemsTotal;
-
-              return (
-                <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-                  <Typography>Station: {s.stationCode}</Typography>
-                  <Typography>Game: {s.game}</Typography>
-                  <Typography>Play Cost: {playCost.toLocaleString()} MMK</Typography>
-                  <Typography>Items Total: {itemsTotal.toLocaleString()} MMK</Typography>
-                  <Typography variant="h6">Total: {totalAmount.toLocaleString()} MMK</Typography>
-                </Box>
-              );
-            })()}
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={closeCheckout}>Cancel</Button>
-            {!checkoutDone && (
-              <Button variant="contained" onClick={() => {
-                performCheckout();
-              }}>
-                Checkout
-              </Button>
-            )}
-            {checkoutDone && (
-              <Button color="error" variant="contained" onClick={() => {
-                removeSession(checkoutSessionId!);
-                closeCheckout();
-              }}>
-                Confirm Close
-              </Button>
-            )}
-          </DialogActions>
-        </Dialog>
+        <CheckoutDialog
+          open={!!checkoutSessionId}
+          onClose={closeCheckout}
+          session={checkoutSession ?? null}
+          now={now}
+          done={checkoutDone}
+          onConfirm={performCheckout}
+          onRemove={removeSession}
+        />
       </Box>
     </div>
   );

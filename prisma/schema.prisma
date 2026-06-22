@@ -18,12 +18,15 @@ model Station {
 }
 
 model Game {
-  id        Int       @id @default(autoincrement())
-  name      String    @unique
-  isActive  Boolean   @default(true)
-  createdAt DateTime  @default(now())
+  id          Int       @id @default(autoincrement())
+  name        String    @unique
+  coverImage  String?
+  platform    String    @default("PS4")
+  isInstalled Boolean   @default(true)
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
 
-  sessions  Session[]
+  sessions    Session[]
 }
 
 model Product {

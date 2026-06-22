@@ -1,4 +1,3 @@
-import { TextField } from "@mui/material";
 import { useEffect, useState } from "react";
 
 export default function Header() {
@@ -16,11 +15,27 @@ export default function Header() {
         <strong>Zin Min Oo</strong>
       </div>
 
-      <TextField
-        size="small"
-        placeholder="Search stations, games, products..."
-        className="topbar-search"
-      />
+      {/* Brand */}
+      <div
+        style={{
+          flex: 1,
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <h2
+          style={{
+            margin: 0,
+            fontSize: "1.5rem",
+            fontWeight: 800,
+            letterSpacing: "0.5px",
+            color: "#1976d2",
+          }}
+        >
+          🎮 TKFamily Game Shop
+        </h2>
+      </div>
 
       <time className="topbar-time" dateTime={now.toISOString()}>
         {now.toLocaleString()}
