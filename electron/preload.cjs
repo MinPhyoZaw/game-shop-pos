@@ -7,6 +7,14 @@ contextBridge.exposeInMainWorld("api", {
   },
   products: {
     getAll: () => ipcRenderer.invoke("products:getAll"),
+     create: (data) =>
+    ipcRenderer.invoke("products:create", data),
+
+     delete: (id) =>
+    ipcRenderer.invoke("products:delete", id),
+
+     update:(data)=>
+      ipcRenderer.invoke("products:update" , data),
   },
   stations: {
     getAll: () => ipcRenderer.invoke("stations:getAll"),

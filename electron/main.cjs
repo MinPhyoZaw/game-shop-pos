@@ -5,6 +5,7 @@ let mainWindow = null;
 let prisma = null;
 
 const path = require("path");
+const { electron } = require("process");
 
 function getPrisma() {
   if (!prisma) {
@@ -49,6 +50,42 @@ require("electron").ipcMain.handle("products:getAll", async () => {
     orderBy: { name: "asc" },
   });
 });
+
+require("electron").ipcMain.handle(
+  "products:create",
+  async (_, data) => {
+    const db = getPrisma();
+
+    return await db.product.create({
+      data: {
+        name: data.name,
+        priceMmk: data.priceMmk,
+      },
+    });
+  }
+);
+
+require('electron').ipcMain.handle('products:delete', async (_, id) => {
+  const db = getPrisma();
+  return await db.product.delete({ where: { id } });
+});
+
+require("electron").ipcMain.handle(
+  "products:update",
+  async (_, data) => {
+    const db = getPrisma();
+
+    return await db.product.update({
+      where: {
+        id: data.id,
+      },
+      data: {
+        name: data.name,
+        priceMmk: data.priceMmk,
+      },
+    });
+  }
+);
 
 require("electron").ipcMain.handle("stations:getAll", async () => {
   const db = getPrisma();

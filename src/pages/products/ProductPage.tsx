@@ -14,10 +14,10 @@ import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import { useEffect, useMemo, useState } from "react";
-import { getProducts, type Product } from "../../services/productService";
+import { getProducts, createProduct,  deleteProduct as deleteProductService,updateProduct ,type Product } from "../../services/productService";
 
 type ProductForm = {
-  id?: string;
+  id?: number;
   name: string;
   priceMmk: string;
 };
@@ -39,60 +39,64 @@ export default function ProductPage() {
   const isEditing = Boolean(form.id);
   const canSave = form.name.trim().length > 0 && Number(form.priceMmk) > 0;
 
-  const nextProductId = useMemo(() => {
-    const maxNumericId = products.reduce((max, product) => {
-      const parsedId = Number(product.id);
-      return Number.isFinite(parsedId) ? Math.max(max, parsedId) : max;
-    }, 0);
-
-    return String(maxNumericId + 1);
-  }, [products]);
-
+  
   const openAddProduct = () => {
     setForm(emptyForm);
     setIsFormOpen(true);
   };
 
-  const openEditProduct = (product: Product) => {
-    setForm({
-      id: product.id,
-      name: product.name,
-      priceMmk: String(product.priceMmk),
-    });
-    setIsFormOpen(true);
-  };
+  
 
   const closeForm = () => {
     setIsFormOpen(false);
     setForm(emptyForm);
   };
 
-  const saveProduct = () => {
-    if (!canSave) return;
+  const saveProduct = async () => {
+  if (!canSave) return;
 
-    const productData: Product = {
-      id: form.id ?? nextProductId,
-      name: form.name.trim(),
-      priceMmk: Number(form.priceMmk),
-    };
+  try {
+    if (form.id) {
+      await updateProduct(
+        form.id,
+        form.name.trim(),
+        Number(form.priceMmk)
+      );
+    } else {
+      await createProduct(
+        form.name.trim(),
+        Number(form.priceMmk)
+      );
+    }
 
-    setProducts((currentProducts) => {
-      if (form.id) {
-        return currentProducts.map((product) =>
-          product.id === form.id ? productData : product,
-        );
-      }
+    const updatedProducts = await getProducts();
 
-      return [productData, ...currentProducts];
-    });
+    setProducts(updatedProducts);
 
     closeForm();
-  };
+  } catch (error) {
+    console.error(error);
+  }
+};
+  const deleteProduct = async (productId: number) => {
+  try {
+    await window.api.products.delete(productId);
 
-  const deleteProduct = (productId: string) => {
-    setProducts((currentProducts) =>
-      currentProducts.filter((product) => product.id !== productId),
-    );
+    const updatedProducts = await getProducts();
+
+    setProducts(updatedProducts);
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+const editProduct = (product: Product) => {
+    setForm({
+      id: product.id,
+      name: product.name,
+      priceMmk: String(product.priceMmk),
+    });
+    setIsFormOpen(true);
   };
 
   return (
@@ -230,7 +234,7 @@ export default function ProductPage() {
             variant="outlined"
             size="small"
             startIcon={<EditIcon />}
-            onClick={() => openEditProduct(product)}
+            onClick={() => editProduct(product)}
           >
             Edit
           </Button>

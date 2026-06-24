@@ -33,7 +33,7 @@ export default function Header() {
             color: "#1976d2",
           }}
         >
-          🎮 TKFamily Game Shop
+          🎮 TKFamily Game Zone
         </h2>
       </div>
 
