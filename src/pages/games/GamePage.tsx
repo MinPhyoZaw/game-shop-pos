@@ -4,41 +4,41 @@ import {
   Button,
 } from "@mui/material";
 import { Add } from "@mui/icons-material";
+import { useEffect, useState } from "react";
 
-const games = [
-  {
-    id: 1,
-    name: "Uncharted",
-    coverImage: "/game-covers/uncharted.jpg",
-  },
-  {
-    id: 2,
-    name: "FarCry 6",
-    coverImage: "/game-covers/farcry.jpg",
-  },
-  {
-    id: 3,
-    name: "GTA V",
-    coverImage: "/game-covers/gta.jpg",
-  },
-  {
-    id: 4,
-    name: "PES",
-    coverImage: "/game-covers/pes.jpg",
-  },
-  {
-    id: 5,
-    name: "Naruto",
-    coverImage: "/game-covers/naruto.jpg",
-  },
-  {
-    id: 6,
-    name: "Resident Evil 4",
-    coverImage: "/game-covers/resident-evil.jpg",
-  },
-];
+interface Game {
+  id: number;
+  name: string;
+  coverImage: string | null;
+}
 
 export default function GamesPage() {
+  const [games, setGames] = useState<Game[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadGames = async () => {
+      try {
+        const data = await window.api.games.getAll();
+        setGames(data);
+      } catch (error) {
+        console.error("Failed to load games:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadGames();
+  }, []);
+
+  if (loading) {
+    return (
+      <Box>
+        <Typography>Loading games...</Typography>
+      </Box>
+    );
+  }
+
   return (
     <Box>
       {/* Header */}
@@ -87,59 +87,61 @@ export default function GamesPage() {
       >
         {games.map((game) => (
           <Box
-  key={game.id}
-  sx={{
-    position: "relative",
-    height: 340,
-    borderRadius: 4,
-    overflow: "hidden",
-    cursor: "pointer",
+            key={game.id}
+            sx={{
+              position: "relative",
+              height: 340,
+              borderRadius: 4,
+              overflow: "hidden",
+              cursor: "pointer",
 
-    backgroundImage: `url(${game.coverImage})`,
-    backgroundSize: "cover",
-    backgroundPosition: "center",
+              backgroundImage: `url(${
+                game.coverImage || "/game-covers/default.jpg"
+              })`,
 
-    transition: "all 0.25s ease",
+              backgroundSize: "cover",
+              backgroundPosition: "center",
 
-    "&:hover": {
-      transform: "translateY(-8px) scale(1.02)",
-      boxShadow: "0 20px 40px rgba(0,0,0,0.25)",
-    },
-  }}
->
-  {/* Blur Name Tag */}
-  <Box
-    sx={{
-      position: "absolute",
-      bottom: 12,
-      left: 12,
-      right: 12,
+              transition: "all 0.25s ease",
 
-      backdropFilter: "blur(12px)",
-      WebkitBackdropFilter: "blur(12px)",
+              "&:hover": {
+                transform: "translateY(-8px) scale(1.02)",
+                boxShadow: "0 20px 40px rgba(0,0,0,0.25)",
+              },
+            }}
+          >
+            <Box
+              sx={{
+                position: "absolute",
+                bottom: 12,
+                left: 12,
+                right: 12,
 
-      background: "rgba(255,255,255,0.15)",
+                backdropFilter: "blur(12px)",
+                WebkitBackdropFilter: "blur(12px)",
 
-      border: "1px solid rgba(255,255,255,0.2)",
+                background: "rgba(255,255,255,0.15)",
 
-      borderRadius: 3,
+                border: "1px solid rgba(255,255,255,0.2)",
 
-      px: 2,
-      py: 1.5,
-    }}
-  >
-    <Typography
-      variant="h6"
-      fontWeight={700}
-      sx={{
-        color: "black",
-        textAlign: "center",
-      }}
-    >
-      {game.name}
-    </Typography>
-  </Box>
-</Box>
+                borderRadius: 3,
+
+                px: 2,
+                py: 1.5,
+              }}
+            >
+              <Typography
+                variant="h6"
+                fontWeight={700}
+                sx={{
+                  color: "black",
+                  textAlign: "center",
+                }}
+              >
+                {game.name}
+              </Typography>
+            </Box>
+          </Box>
         ))}
       </Box>
     </Box>

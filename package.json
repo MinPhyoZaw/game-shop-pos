@@ -2,9 +2,12 @@
   "name": "tk-family-pos",
   "private": true,
   "version": "0.0.0",
+    "main": "electron/main.cjs",
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "electron": "electron .",
+    "dev:electron": "concurrently \"npm run dev\" \"wait-on http://localhost:5173 && electron .\"",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
