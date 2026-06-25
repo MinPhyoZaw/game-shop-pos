@@ -4,6 +4,15 @@ const { contextBridge, ipcRenderer } = require("electron");
 contextBridge.exposeInMainWorld("api", {
   games: {
     getAll: () => ipcRenderer.invoke("games:getAll"),
+      create: (data) =>
+    ipcRenderer.invoke("games:create", data),
+      
+
+  update: (data) =>
+    ipcRenderer.invoke("games:update", data),
+
+  delete: (id) =>
+    ipcRenderer.invoke("games:delete", id),
   },
   products: {
     getAll: () => ipcRenderer.invoke("products:getAll"),

@@ -4,6 +4,7 @@ import { useEffect, useMemo } from "react";
 import type { ActiveSession } from "../../context/SessionContext";
 import { useSessionCalculations, useDuration } from "./useSessionCalculations";
 import { useSessions } from "../../context/SessionContext";
+import { useApp } from "../../context/AppContext";
 
 interface Props {
   session: ActiveSession;
@@ -16,6 +17,7 @@ export default function SessionCard({ session, now, onCheckout }: Props) {
   const duration = useDuration(session.startTime, now);
 
   const { dismissPreAlert } = useSessions();
+  const { soundEnabled } = useApp();
 
   const heartbeat = keyframes`
     0% { transform: scale(1); }
@@ -43,27 +45,48 @@ export default function SessionCard({ session, now, onCheckout }: Props) {
 
   const isAlmostOver = remainingMs !== null && remainingMs > 0 && remainingMs <= 5 * 60 * 1000;
 
-  // show a one-time notification when preAlert flag becomes true (5 minutes left)
+  // show a one-time notification and sound alert when preAlert flag becomes true (5 minutes left)
   useEffect(() => {
-    if (session.preAlert && !session.alertDismissed) {
-      // Request permission if necessary
-      if (typeof Notification !== "undefined") {
-        if (Notification.permission === "default") Notification.requestPermission();
-        if (Notification.permission === "granted") {
-          new Notification("Session ending soon", {
-            body: `${session.stationCode} — ${session.game} has 5 minutes remaining.`,
-          });
-        }
-      }
+    if (!session.preAlert || session.alertDismissed) return;
 
-      // mark as dismissed so we don't repeat
-      try {
-        dismissPreAlert(session.id);
-      } catch (e) {
-        // ignore
+    if (soundEnabled && typeof window !== "undefined") {
+      const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+      if (AudioContext) {
+        const ctx = new AudioContext();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.type = "square";
+        osc.frequency.value = 880;
+        gain.gain.value = 0.16;
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start();
+        osc.stop(ctx.currentTime + 0.35);
+
+        osc.onended = () => {
+          ctx.close().catch(() => {});
+        };
       }
     }
-  }, [session.preAlert, session.alertDismissed, session.id, session.stationCode, session.game, dismissPreAlert]);
+
+    if (typeof Notification !== "undefined") {
+      if (Notification.permission === "default") Notification.requestPermission();
+      if (Notification.permission === "granted") {
+        new Notification("Session ending soon", {
+          body: `${session.stationCode} — ${session.game} has 5 minutes remaining.`,
+        });
+      }
+    }
+
+    try {
+      dismissPreAlert(session.id);
+    } catch (e) {
+      // ignore
+    }
+  }, [session.preAlert, session.alertDismissed, session.id, session.stationCode, session.game, dismissPreAlert, soundEnabled]);
 
   return (
     <Card

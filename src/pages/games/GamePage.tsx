@@ -2,9 +2,15 @@ import {
   Box,
   Typography,
   Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
 } from "@mui/material";
 import { Add } from "@mui/icons-material";
 import { useEffect, useState } from "react";
+
 
 interface Game {
   id: number;
@@ -13,6 +19,9 @@ interface Game {
 }
 
 export default function GamesPage() {
+  const [open, setOpen] = useState(false);
+const [name, setName] = useState("");
+const [coverImage, setCoverImage] = useState("");
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -30,7 +39,26 @@ export default function GamesPage() {
 
     loadGames();
   }, []);
+const saveGame = async () => {
+  try {
+    await window.api.games.create({
+      name,
+      coverImage,
+    });
 
+    const updatedGames =
+      await window.api.games.getAll();
+
+    setGames(updatedGames);
+
+    setName("");
+    setCoverImage("");
+
+    setOpen(false);
+  } catch (error) {
+    console.error(error);
+  }
+};
   if (loading) {
     return (
       <Box>
@@ -40,6 +68,8 @@ export default function GamesPage() {
   }
 
   return (
+
+    
     <Box>
       {/* Header */}
       <Box
@@ -66,6 +96,7 @@ export default function GamesPage() {
         <Button
           variant="contained"
           startIcon={<Add />}
+           onClick={() => setOpen(true)}
           sx={{
             borderRadius: 3,
             px: 3,
@@ -144,6 +175,48 @@ export default function GamesPage() {
           </Box>
         ))}
       </Box>
+
+      <Dialog
+  open={open}
+  onClose={() => setOpen(false)}
+  fullWidth
+  maxWidth="sm"
+>
+  <DialogTitle>Add Game</DialogTitle>
+
+  <DialogContent>
+    <TextField
+      label="Game Name"
+      fullWidth
+      margin="normal"
+      value={name}
+      onChange={(e) => setName(e.target.value)}
+    />
+
+    <TextField
+      label="Cover Image"
+      placeholder="/game-covers/gta6.jpg"
+      fullWidth
+      margin="normal"
+      value={coverImage}
+      onChange={(e) => setCoverImage(e.target.value)}
+    />
+  </DialogContent>
+
+  <DialogActions>
+    <Button onClick={() => setOpen(false)}>
+      Cancel
+    </Button>
+
+    <Button
+      variant="contained"
+      onClick={saveGame}
+       disabled={!name.trim()}
+    >
+      Save
+    </Button>
+  </DialogActions>
+</Dialog>
     </Box>
   );
 }

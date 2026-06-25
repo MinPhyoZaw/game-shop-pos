@@ -24,13 +24,20 @@ interface Props {
   stationType?: string;
 }
 
+interface GameOption {
+  id: number;
+  name: string;
+  coverImage: string | null;
+  platform: string;
+}
+
 export default function StartSessionModal({
   open,
   onClose,
   stationCode,
   stationType,
 }: Props) {
-  const [games, setGames] = useState<string[]>([]);
+  const [games, setGames] = useState<GameOption[]>([]);
   const [game, setGame] = useState("");
   const [note, setNote] = useState("");
   const [hours, setHours] = useState(0);
@@ -86,8 +93,8 @@ export default function StartSessionModal({
             sx={{ borderRadius: 2 }}
           >
             {games.map((g) => (
-              <MenuItem key={g} value={g}>
-                {g}
+              <MenuItem key={g.id} value={g.name}>
+                {g.name}
               </MenuItem>
             ))}
           </Select>

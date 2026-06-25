@@ -43,6 +43,70 @@ require("electron").ipcMain.handle("games:getAll", async () => {
   });
 });
 
+
+require("electron").ipcMain.handle(
+  "games:create",
+  async (_, data) => {
+    const db = getPrisma();
+
+    return await db.game.create({
+      data: {
+        name: data.name,
+        coverImage: data.coverImage,
+        platform: data.platform ?? "PS4",
+      },
+    });
+  }
+);
+
+require('electron').ipcMain.handle(
+  "games:update",
+  async (_, data) => {
+    const db = getPrisma();
+
+    return await db.game.update({
+      where: {
+        id: data.id,
+      },
+      data: {
+        name: data.name,
+        coverImage: data.coverImage,
+        platform: data.platform,
+      },
+    });
+  }
+);
+
+
+require('electron').ipcMain.handle(
+  "games:delete",
+  async (_, id) => {
+    const db = getPrisma();
+
+    return await db.game.update({
+      where: {
+        id,
+      },
+      data: {
+        isActive: false,
+      },
+    });
+  }
+);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 require("electron").ipcMain.handle("products:getAll", async () => {
   const db = getPrisma();
   return await db.product.findMany({
