@@ -1,16 +1,17 @@
 import { useMemo } from "react";
-import type { ActiveSession } from "../../context/SessionContext";
+import type { SessionWithDetails } from "../../context/SessionContext";
 
-export function useSessionCalculations(session: ActiveSession, now: number) {
+export function useSessionCalculations(session: SessionWithDetails, now: number) {
   return useMemo(() => {
-    const elapsedMs = now - session.startTime;
+    const startTime = new Date(session.startTime).getTime();
+    const elapsedMs = now - startTime;
     const minutes = Math.ceil(elapsedMs / 60000);
-    const ratePerMinute = session.stationType === "PS4" ? 50 : session.stationType === "PS3" ? Math.round(2000 / 60) : 0;
-    const playCost = minutes * ratePerMinute;
-    const itemsTotal = session.itemsTotalMmk || 0;
+    const playCost =
+      Math.ceil(minutes / 60) * session.hourlyRateMmkSnapshot;
+    const itemsTotal = session.items.reduce((sum, i) => sum + i.lineTotalMmk, 0);
     const totalAmount = playCost + itemsTotal;
-    
-    return { elapsedMs, minutes, ratePerMinute, playCost, itemsTotal, totalAmount };
+
+    return { elapsedMs, minutes, playCost, itemsTotal, totalAmount };
   }, [session, now]);
 }
 

@@ -4,24 +4,39 @@ import RemoveIcon from '@mui/icons-material/Remove';
 import { useEffect, useState } from "react";
 import { getProducts } from "../../services/productService";
 import type { Product } from "../../services/productService";
-import { useSessions } from "../../context/SessionContext";
+import type { SessionWithDetails } from "../../context/SessionContext";
 
 interface Props {
   open: boolean;
   onClose: () => void;
-  stationCode: string;
+  session: SessionWithDetails;
+  onRefresh: () => void;
 }
 
-export default function ProductsPane({ open, onClose, stationCode }: Props) {
+export default function ProductsPane({ open, onClose, session, onRefresh }: Props) {
   const [products, setProducts] = useState<Product[]>([]);
-  const { sessions, addItem, changeItemQty } = useSessions();
 
   useEffect(() => {
     getProducts().then(setProducts);
   }, []);
 
-  const session = sessions.find((s) => s.stationCode === stationCode);
-  const sessionId = session?.id;
+  const addItem = async (product: Product) => {
+    await window.api.sessions.addItem({
+      sessionId: session.id,
+      productId: product.id,
+      unitPriceMmk: product.priceMmk,
+    });
+    onRefresh();
+  };
+
+  const changeItemQty = async (productId: number, qty: number) => {
+    await window.api.sessions.changeItemQty({
+      sessionId: session.id,
+      productId,
+      qty,
+    });
+    onRefresh();
+  };
 
   return (
     <Drawer anchor="right" open={open} onClose={onClose}>
@@ -29,7 +44,7 @@ export default function ProductsPane({ open, onClose, stationCode }: Props) {
         <Typography variant="h6">Products</Typography>
 
         {products.map((p) => {
-          const qty = session?.items.find((it) => it.productId === p.id)?.qty || 0;
+          const qty = session.items.find((it) => it.productId === p.id)?.qty || 0;
 
           return (
             <Box key={p.id} sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mt: 2 }}>
@@ -42,9 +57,8 @@ export default function ProductsPane({ open, onClose, stationCode }: Props) {
                 <IconButton
                   size="small"
                   onClick={() => {
-                    if (!sessionId) return;
-                    if (qty - 1 <= 0) changeItemQty(sessionId, p.id, 0);
-                    else changeItemQty(sessionId, p.id, qty - 1);
+                    if (qty - 1 <= 0) changeItemQty(p.id, 0);
+                    else changeItemQty(p.id, qty - 1);
                   }}
                 >
                   <RemoveIcon />
@@ -54,10 +68,7 @@ export default function ProductsPane({ open, onClose, stationCode }: Props) {
 
                 <IconButton
                   size="small"
-                  onClick={() => {
-                    if (!sessionId) return;
-                    addItem(sessionId, { productId: p.id, name: p.name, unitPriceMmk: p.priceMmk });
-                  }}
+                  onClick={() => addItem(p)}
                 >
                   <AddIcon />
                 </IconButton>

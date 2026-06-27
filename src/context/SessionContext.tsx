@@ -1,37 +1,41 @@
-import React, { createContext, useContext, useState, useRef } from "react";
+import React, { createContext, useContext, useState } from "react";
 
 export interface SessionItem {
-  productId: string;
-  name: string;
+  id: number;
+  productId: number;
+  productName?: string;
   qty: number;
-  unitPriceMmk: number;
+  unitPriceMmkSnapshot: number;
   lineTotalMmk: number;
 }
 
-export interface ActiveSession {
-  id: string;
-  stationCode: string;
-  stationType?: string;
-  game: string;
-  note?: string;
-  startTime: number;
-  durationMinutes?: number;
-  endTime?: number;
-  status?: "running" | "ended";
-  preAlert?: boolean;
-  alertDismissed?: boolean;
+export interface SessionWithDetails {
+  id: number;
+  stationId: number;
+  gameId: number;
+  note: string | null;
+  startTime: string;
+  endTime: string | null;
+  hourlyRateMmkSnapshot: number;
+  durationMinutes: number | null;
+  playCostMmk: number | null;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
   items: SessionItem[];
-  itemsTotalMmk: number;
+  game: { id: number; name: string };
+  station: { id: number; code: string; type: string };
+}
+
+interface TimerState {
+  preAlert: boolean;
+  alertDismissed: boolean;
 }
 
 interface SessionContextValue {
-  sessions: ActiveSession[];
-  addSession: (s: Omit<ActiveSession, "id" | "startTime" | "items" | "itemsTotalMmk" | "endTime" | "status">) => void;
-  removeSession: (id: string) => void;
-  addItem: (sessionId: string, item: { productId: string; name: string; unitPriceMmk: number }) => void;
-  changeItemQty: (sessionId: string, productId: string, qty: number) => void;
-  markSessionEnded: (id: string) => void;
-  dismissPreAlert: (id: string) => void;
+  timerStates: Record<number, TimerState>;
+  setPreAlert: (sessionId: number, value: boolean) => void;
+  dismissPreAlert: (sessionId: number) => void;
 }
 
 const SessionContext = createContext<SessionContextValue | undefined>(
@@ -41,135 +45,31 @@ const SessionContext = createContext<SessionContextValue | undefined>(
 export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [sessions, setSessions] = useState<ActiveSession[]>([]);
-  const timeoutsRef = useRef<Record<string, ReturnType<typeof setTimeout> | null>>({});
-  const preAlertTimeoutsRef = useRef<Record<string, ReturnType<typeof setTimeout> | null>>({});
+  const [timerStates, setTimerStates] = useState<Record<number, TimerState>>({});
 
-  const addSession = (s: Omit<ActiveSession, "id" | "startTime" | "items" | "itemsTotalMmk" | "endTime" | "status">) => {
-    const newSession: ActiveSession = {
-      ...s,
-      id: `${s.stationCode}_${Date.now()}`,
-      startTime: Date.now(),
-      items: [],
-      itemsTotalMmk: 0,
-      status: "running",
-    };
-
-    setSessions((prev) => [newSession, ...prev]);
-
-    if (s.durationMinutes && s.durationMinutes > 0) {
-      const ms = s.durationMinutes * 60 * 1000;
-      const end = newSession.startTime + ms;
-      newSession.endTime = end;
-
-      // schedule auto-end
-      const to = setTimeout(() => {
-        markSessionEnded(newSession.id);
-      }, ms);
-      timeoutsRef.current[newSession.id] = to;
-
-      // schedule pre-alert 5 minutes before end if possible
-      const fiveMinMs = 5 * 60 * 1000;
-      if (ms > fiveMinMs) {
-        const preMs = ms - fiveMinMs;
-        const preTo = setTimeout(() => {
-          // set preAlert flag and make sure alert not dismissed
-          setSessions((prev) =>
-            prev.map((ses) =>
-              ses.id === newSession.id ? { ...ses, preAlert: true, alertDismissed: false } : ses
-            )
-          );
-        }, preMs);
-        preAlertTimeoutsRef.current[newSession.id] = preTo;
-      }
-    }
+  const setPreAlert = (sessionId: number, value: boolean) => {
+    setTimerStates((prev) => ({
+      ...prev,
+      [sessionId]: {
+        ...(prev[sessionId] || { alertDismissed: false }),
+        preAlert: value,
+      },
+    }));
   };
 
-  const removeSession = (id: string) => {
-    // clear any timeout
-    const t = timeoutsRef.current[id];
-    if (t) clearTimeout(t as ReturnType<typeof setTimeout>);
-    delete timeoutsRef.current[id];
-    const pt = preAlertTimeoutsRef.current[id];
-    if (pt) clearTimeout(pt as ReturnType<typeof setTimeout>);
-    delete preAlertTimeoutsRef.current[id];
-
-    setSessions((prev) => prev.filter((x) => x.id !== id));
-  };
-
-  const markSessionEnded = (id: string) => {
-    setSessions((prev) =>
-      prev.map((s) => {
-        if (s.id !== id) return s;
-        return { ...s, status: "ended", endTime: s.endTime ?? Date.now() };
-      })
-    );
-
-    const t = timeoutsRef.current[id];
-    if (t) {
-      clearTimeout(t as ReturnType<typeof setTimeout>);
-      delete timeoutsRef.current[id];
-    }
-
-    const pt = preAlertTimeoutsRef.current[id];
-    if (pt) {
-      clearTimeout(pt as ReturnType<typeof setTimeout>);
-      delete preAlertTimeoutsRef.current[id];
-    }
-  };
-
-  const dismissPreAlert = (id: string) => {
-    setSessions((prev) => prev.map((s) => (s.id === id ? { ...s, alertDismissed: true } : s)));
-  };
-
-  const addItem = (sessionId: string, item: { productId: string; name: string; unitPriceMmk: number }) => {
-    setSessions((prev) =>
-      prev.map((s) => {
-        if (s.id !== sessionId) return s;
-
-        const existing = s.items.find((it) => it.productId === item.productId);
-        let items: SessionItem[];
-
-        if (existing) {
-          items = s.items.map((it) =>
-            it.productId === item.productId
-              ? { ...it, qty: it.qty + 1, lineTotalMmk: (it.qty + 1) * it.unitPriceMmk }
-              : it
-          );
-        } else {
-          items = [
-            ...s.items,
-            { productId: item.productId, name: item.name, qty: 1, unitPriceMmk: item.unitPriceMmk, lineTotalMmk: item.unitPriceMmk },
-          ];
-        }
-
-        const itemsTotalMmk = items.reduce((a, b) => a + b.lineTotalMmk, 0);
-
-        return { ...s, items, itemsTotalMmk };
-      })
-    );
-  };
-
-  const changeItemQty = (sessionId: string, productId: string, qty: number) => {
-    setSessions((prev) =>
-      prev.map((s) => {
-        if (s.id !== sessionId) return s;
-
-        let items = s.items.map((it) =>
-          it.productId === productId ? { ...it, qty, lineTotalMmk: qty * it.unitPriceMmk } : it
-        );
-
-        items = items.filter((it) => it.qty > 0);
-
-        const itemsTotalMmk = items.reduce((a, b) => a + b.lineTotalMmk, 0);
-
-        return { ...s, items, itemsTotalMmk };
-      })
-    );
+  const dismissPreAlert = (sessionId: number) => {
+    setTimerStates((prev) => ({
+      ...prev,
+      [sessionId]: {
+        ...(prev[sessionId] || {}),
+        preAlert: false,
+        alertDismissed: true,
+      },
+    }));
   };
 
   return (
-    <SessionContext.Provider value={{ sessions, addSession, removeSession, addItem, changeItemQty, markSessionEnded, dismissPreAlert }}>
+    <SessionContext.Provider value={{ timerStates, setPreAlert, dismissPreAlert }}>
       {children}
     </SessionContext.Provider>
   );

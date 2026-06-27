@@ -15,13 +15,15 @@ import {
 } from "@mui/material";
 import { useEffect, useState } from "react";
 import { getGames } from "../../services/gameService";
-import { useSessions } from "../../context/SessionContext";
 
 interface Props {
   open: boolean;
   onClose: () => void;
+  stationId?: number;
   stationCode?: string;
   stationType?: string;
+  hourlyRateMmk?: number;
+  onStarted?: () => void;
 }
 
 interface GameOption {
@@ -34,32 +36,31 @@ interface GameOption {
 export default function StartSessionModal({
   open,
   onClose,
+  stationId,
   stationCode,
   stationType,
+  hourlyRateMmk,
+  onStarted,
 }: Props) {
   const [games, setGames] = useState<GameOption[]>([]);
-  const [game, setGame] = useState("");
+  const [gameId, setGameId] = useState<number | "">("");
   const [note, setNote] = useState("");
   const [hours, setHours] = useState(0);
   const [minutes, setMinutes] = useState(0);
-
-  const { addSession } = useSessions();
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     getGames().then(setGames);
   }, []);
 
   const rate =
-    stationType === "PS4"
-      ? 3000
-      : stationType === "PS3"
-      ? 2000
-      : 0;
+    hourlyRateMmk ??
+    (stationType === "PS4" ? 3000 : stationType === "PS3" ? 2000 : 0);
 
   const totalMinutes = hours * 60 + minutes;
 
   const handleClose = () => {
-    setGame("");
+    setGameId("");
     setNote("");
     setHours(0);
     setMinutes(0);
@@ -85,15 +86,13 @@ export default function StartSessionModal({
 
           <Select
             labelId="game-select-label"
-            value={game}
+            value={gameId}
             label="Game"
-            onChange={(e) =>
-              setGame(e.target.value as string)
-            }
+            onChange={(e) => setGameId(e.target.value as number)}
             sx={{ borderRadius: 2 }}
           >
             {games.map((g) => (
-              <MenuItem key={g.id} value={g.name}>
+              <MenuItem key={g.id} value={g.id}>
                 {g.name}
               </MenuItem>
             ))}
@@ -262,24 +261,24 @@ export default function StartSessionModal({
 
         <Button
           variant="contained"
-          disabled={!game}
-          onClick={() => {
-            if (!game || !stationCode) return;
+          disabled={!gameId || !stationId || submitting}
+          onClick={async () => {
+            if (!gameId || !stationId) return;
 
-            const durationMinutes =
-              totalMinutes > 0
-                ? totalMinutes
-                : undefined;
-
-            addSession({
-              stationCode,
-              stationType,
-              game,
-              note,
-              durationMinutes,
-            });
-
-            handleClose();
+            setSubmitting(true);
+            try {
+              await window.api.sessions.create({
+                stationId,
+                gameId: gameId as number,
+                note: note || undefined,
+                hourlyRateMmkSnapshot: rate,
+                durationMinutes: totalMinutes > 0 ? totalMinutes : undefined,
+              });
+              onStarted?.();
+              handleClose();
+            } finally {
+              setSubmitting(false);
+            }
           }}
         >
           Start Session

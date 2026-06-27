@@ -1,31 +1,21 @@
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography, Box, Divider } from "@mui/material";
-import type { ActiveSession } from "../../context/SessionContext";
+import type { SessionWithDetails } from "../../context/SessionContext";
+import { useSessionCalculations } from "./useSessionCalculations";
 
 interface Props {
   open: boolean;
   onClose: () => void;
-  session: ActiveSession | null;
+  session: SessionWithDetails | null;
   now: number;
   done: boolean;
   onConfirm: () => void;
-  onRemove: (id: string) => void;
-}
-
-function getSessionCalculations(session: ActiveSession, now: number) {
-  const elapsedMs = now - session.startTime;
-  const minutes = Math.ceil(elapsedMs / 60000);
-  const ratePerMinute = session.stationType === "PS4" ? 50 : session.stationType === "PS3" ? Math.round(2000 / 60) : 0;
-  const playCost = minutes * ratePerMinute;
-  const itemsTotal = session.itemsTotalMmk || 0;
-  const totalAmount = playCost + itemsTotal;
-  
-  return { playCost, itemsTotal, totalAmount };
+  onRemove: (id: number) => void;
 }
 
 export default function CheckoutDialog({ open, onClose, session, now, done, onConfirm, onRemove }: Props) {
   if (!session) return null;
 
-  const { playCost, itemsTotal, totalAmount } = getSessionCalculations(session, now);
+  const { playCost, itemsTotal, totalAmount } = useSessionCalculations(session, now);
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
@@ -37,9 +27,9 @@ export default function CheckoutDialog({ open, onClose, session, now, done, onCo
               Station
             </Typography>
             <Typography variant="h6" fontWeight={700}>
-              {session.stationCode}
+              {session.station.code}
             </Typography>
-            <Typography color="text.secondary">🎮 {session.game}</Typography>
+            <Typography color="text.secondary">🎮 {session.game.name}</Typography>
           </Box>
 
           {session.items.length > 0 && (
@@ -48,9 +38,9 @@ export default function CheckoutDialog({ open, onClose, session, now, done, onCo
                 Products
               </Typography>
               {session.items.map((item) => (
-                <Box key={item.productId} sx={{ display: "flex", justifyContent: "space-between", pl: 1 }}>
+                <Box key={item.id} sx={{ display: "flex", justifyContent: "space-between", pl: 1 }}>
                   <Typography variant="body2">
-                    {item.name} x {item.qty}
+                    {item.productName || `Product ${item.productId}`} x {item.qty}
                   </Typography>
                   <Typography variant="body2" fontWeight={500}>
                     {item.lineTotalMmk.toLocaleString()} MMK

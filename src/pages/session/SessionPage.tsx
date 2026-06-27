@@ -1,30 +1,47 @@
 import { Box, Typography, Alert, IconButton } from "@mui/material";
 import CloseIcon from '@mui/icons-material/Close';
-import { useSessions } from "../../context/SessionContext";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import SessionCard from "./SessionCard";
 import CheckoutDialog from "./CheckoutDialog";
+import type { SessionWithDetails } from "../../context/SessionContext";
+import { useSessions } from "../../context/SessionContext";
 
 export default function SessionPage() {
-  const { sessions, removeSession, dismissPreAlert } = useSessions();
-  const [checkoutSessionId, setCheckoutSessionId] = useState<string | null>(null);
+  const [sessions, setSessions] = useState<SessionWithDetails[]>([]);
+  const [checkoutSessionId, setCheckoutSessionId] = useState<number | null>(null);
   const [checkoutDone, setCheckoutDone] = useState(false);
   const [now, setNow] = useState(() => Date.now());
+  const { timerStates, dismissPreAlert } = useSessions();
 
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, []);
 
+  const loadSessions = useCallback(async () => {
+    const data = await window.api.sessions.getAll();
+    setSessions(data);
+  }, []);
+
   useEffect(() => {
-    const ended = sessions.find((s) => s.status === "ended");
-    if (ended) {
-      setCheckoutSessionId(ended.id);
+    loadSessions();
+    const id = setInterval(loadSessions, 3000);
+    return () => clearInterval(id);
+  }, [loadSessions]);
+
+  useEffect(() => {
+    const expired = sessions.find((s) => {
+      if (!s.durationMinutes) return false;
+      const endTime = new Date(s.startTime).getTime() + s.durationMinutes * 60000;
+      return now >= endTime;
+    });
+    if (expired && !checkoutSessionId) {
+      setCheckoutSessionId(expired.id);
       setCheckoutDone(false);
     }
-  }, [sessions]);
+  }, [sessions, now, checkoutSessionId]);
 
-  const openCheckout = (id: string) => {
+  const openCheckout = (id: number) => {
     setCheckoutSessionId(id);
     setCheckoutDone(false);
   };
@@ -34,11 +51,25 @@ export default function SessionPage() {
     setCheckoutDone(false);
   };
 
-  const performCheckout = () => {
+  const performCheckout = async () => {
+    if (!checkoutSessionId) return;
+
+    await window.api.sessions.finish(checkoutSessionId);
     setCheckoutDone(true);
+    await loadSessions();
   };
 
-  const checkoutSession = sessions.find(x => x.id === checkoutSessionId);
+  const removeSession = async (id: number) => {
+    setSessions((prev) => prev.filter((s) => s.id !== id));
+    await loadSessions();
+  };
+
+  const checkoutSession = sessions.find((x) => x.id === checkoutSessionId);
+
+  const preAlertSessions = sessions.filter((s) => {
+    const state = timerStates[s.id];
+    return state?.preAlert && !state.alertDismissed;
+  });
 
   return (
     <div>
@@ -48,22 +79,20 @@ export default function SessionPage() {
       </Typography>
 
       <Box sx={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 2 }}>
-        {sessions
-          .filter((s) => s.preAlert && !s.alertDismissed)
-          .map((s) => (
-            <Alert
-              key={`prealert-${s.id}`}
-              severity="warning"
-              action={
-                <IconButton size="small" onClick={() => dismissPreAlert(s.id)}>
-                  <CloseIcon fontSize="small" />
-                </IconButton>
-              }
-              sx={{ gridColumn: "1 / -1", mb: 1 }}
-            >
-              {s.stationCode} will be closed in {Math.max(0, Math.ceil((s.endTime! - now) / 1000))} seconds
-            </Alert>
-          ))}
+        {preAlertSessions.map((s) => (
+          <Alert
+            key={`prealert-${s.id}`}
+            severity="warning"
+            action={
+              <IconButton size="small" onClick={() => dismissPreAlert(s.id)}>
+                <CloseIcon fontSize="small" />
+              </IconButton>
+            }
+            sx={{ gridColumn: "1 / -1", mb: 1 }}
+          >
+            {s.station.code} will be closed in 5 minutes
+          </Alert>
+        ))}
         {sessions.length === 0 && (
           <Typography color="text.secondary">No active sessions</Typography>
         )}

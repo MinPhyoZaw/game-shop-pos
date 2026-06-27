@@ -4,43 +4,53 @@ import {
   CardContent,
   Typography,
   Grid,
-  Divider,
 } from "@mui/material";
 import {
   AttachMoney,
   SportsEsports,
-  AccessTime,
   ShoppingBag,
 } from "@mui/icons-material";
+import { useEffect, useState } from "react";
+
+interface SessionReport {
+  totalIncome: number;
+  playIncome: number;
+  productIncome: number;
+  totalSessions: number;
+  byStation: Record<string, { playIncome: number; productIncome: number; sessions: number }>;
+}
 
 export default function ReportPage() {
+  const [report, setReport] = useState<SessionReport | null>(null);
+
+  useEffect(() => {
+    window.api.sessions.getReport().then(setReport);
+  }, []);
+
+  const formatMmk = (value: number) => `${value.toLocaleString()} MMK`;
+
   return (
     <Box>
-      {/* Header */}
       <Box>
         <Typography variant="h4" fontWeight={700}>
           Reports
         </Typography>
 
-        <Typography color="text.secondary"
-          sx={{ mt: 1 , mb: 3 }}
-          >
-          Daily business statistics and income.
-          
+        <Typography color="text.secondary" sx={{ mt: 1, mb: 3 }}>
+          Business statistics and income from completed sessions.
         </Typography>
       </Box>
 
-      {/* Summary Cards */}
       <Grid container spacing={3}>
         <Grid size={{ xs: 12, md: 3 }}>
           <Card sx={{ borderRadius: 4 }}>
             <CardContent>
               <AttachMoney color="success" />
               <Typography color="text.secondary">
-                Today's Income
+                Total Income
               </Typography>
               <Typography variant="h5" fontWeight={700}>
-                85,000 MMK
+                {report ? formatMmk(report.totalIncome) : "—"}
               </Typography>
             </CardContent>
           </Card>
@@ -51,10 +61,10 @@ export default function ReportPage() {
             <CardContent>
               <SportsEsports color="primary" />
               <Typography color="text.secondary">
-                Sessions
+                Total Sessions
               </Typography>
               <Typography variant="h5" fontWeight={700}>
-                18
+                {report ? report.totalSessions : "—"}
               </Typography>
             </CardContent>
           </Card>
@@ -65,10 +75,10 @@ export default function ReportPage() {
             <CardContent>
               <ShoppingBag color="warning" />
               <Typography color="text.secondary">
-                Product Sales
+                Product Income
               </Typography>
               <Typography variant="h5" fontWeight={700}>
-                25,000 MMK
+                {report ? formatMmk(report.productIncome) : "—"}
               </Typography>
             </CardContent>
           </Card>
@@ -77,24 +87,17 @@ export default function ReportPage() {
         <Grid size={{ xs: 12, md: 3 }}>
           <Card sx={{ borderRadius: 4 }}>
             <CardContent>
-              <AccessTime color="info" />
+              <SportsEsports color="info" />
               <Typography color="text.secondary">
-                Play Hours
+                Play Income
               </Typography>
               <Typography variant="h5" fontWeight={700}>
-                32 Hours
+                {report ? formatMmk(report.playIncome) : "—"}
               </Typography>
             </CardContent>
           </Card>
         </Grid>
       </Grid>
-
-      {/* Recent Sessions */}
-     
-      {/* Top Games */}
-     
-      {/* Product Sales */}
-      
     </Box>
   );
 }

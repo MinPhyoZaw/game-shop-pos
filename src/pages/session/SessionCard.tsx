@@ -1,23 +1,25 @@
 import { Card, CardContent, Button, Typography, Box } from "@mui/material";
 import { keyframes } from "@mui/system";
 import { useEffect, useMemo } from "react";
-import type { ActiveSession } from "../../context/SessionContext";
+import type { SessionWithDetails } from "../../context/SessionContext";
 import { useSessionCalculations, useDuration } from "./useSessionCalculations";
 import { useSessions } from "../../context/SessionContext";
 import { useApp } from "../../context/AppContext";
 
 interface Props {
-  session: ActiveSession;
+  session: SessionWithDetails;
   now: number;
-  onCheckout: (id: string) => void;
+  onCheckout: (id: number) => void;
 }
 
 export default function SessionCard({ session, now, onCheckout }: Props) {
   const { playCost, totalAmount } = useSessionCalculations(session, now);
-  const duration = useDuration(session.startTime, now);
+  const duration = useDuration(new Date(session.startTime).getTime(), now);
 
-  const { dismissPreAlert } = useSessions();
+  const { dismissPreAlert, timerStates, setPreAlert } = useSessions();
   const { soundEnabled } = useApp();
+
+  const timerState = timerStates[session.id] || { preAlert: false, alertDismissed: false };
 
   const heartbeat = keyframes`
     0% { transform: scale(1); }
@@ -30,8 +32,8 @@ export default function SessionCard({ session, now, onCheckout }: Props) {
   const remainingMs = useMemo(() => {
     if (!session.durationMinutes) return null;
     const totalMs = session.durationMinutes * 60 * 1000;
-    const end = session.endTime ?? (session.startTime + totalMs);
-    return end - now;
+    const endTime = session.endTime ? new Date(session.endTime).getTime() : (new Date(session.startTime).getTime() + totalMs);
+    return endTime - now;
   }, [session, now]);
 
   const remainingFormatted = useMemo(() => {
@@ -45,9 +47,14 @@ export default function SessionCard({ session, now, onCheckout }: Props) {
 
   const isAlmostOver = remainingMs !== null && remainingMs > 0 && remainingMs <= 5 * 60 * 1000;
 
-  // show a one-time notification and sound alert when preAlert flag becomes true (5 minutes left)
   useEffect(() => {
-    if (!session.preAlert || session.alertDismissed) return;
+    if (isAlmostOver && !timerState.alertDismissed) {
+      setPreAlert(session.id, true);
+    }
+  }, [isAlmostOver, session.id, timerState.alertDismissed, setPreAlert]);
+
+  useEffect(() => {
+    if (!timerState.preAlert || timerState.alertDismissed) return;
 
     if (soundEnabled && typeof window !== "undefined") {
       const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
@@ -76,7 +83,7 @@ export default function SessionCard({ session, now, onCheckout }: Props) {
       if (Notification.permission === "default") Notification.requestPermission();
       if (Notification.permission === "granted") {
         new Notification("Session ending soon", {
-          body: `${session.stationCode} — ${session.game} has 5 minutes remaining.`,
+          body: `${session.station.code} — ${session.game.name} has 5 minutes remaining.`,
         });
       }
     }
@@ -86,7 +93,9 @@ export default function SessionCard({ session, now, onCheckout }: Props) {
     } catch (e) {
       // ignore
     }
-  }, [session.preAlert, session.alertDismissed, session.id, session.stationCode, session.game, dismissPreAlert, soundEnabled]);
+  }, [timerState.preAlert, timerState.alertDismissed, session.id, session.station.code, session.game.name, dismissPreAlert, soundEnabled]);
+
+  const itemsTotal = session.items.reduce((sum, i) => sum + i.lineTotalMmk, 0);
 
   return (
     <Card
@@ -105,7 +114,7 @@ export default function SessionCard({ session, now, onCheckout }: Props) {
       <CardContent>
         <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
           <Typography variant="h5" fontWeight={700}>
-            {session.stationCode}
+            {session.station.code}
           </Typography>
           <Box
             sx={{
@@ -121,7 +130,7 @@ export default function SessionCard({ session, now, onCheckout }: Props) {
           </Box>
         </Box>
 
-        <Typography sx={{ color: "#94a3b8", mb: 2 }}>🎮 {session.game}</Typography>
+        <Typography sx={{ color: "#94a3b8", mb: 2 }}>🎮 {session.game.name}</Typography>
 
         <Box sx={{ textAlign: "center", py: 2, borderRadius: 3, bgcolor: "rgba(255,255,255,.08)", mb: 2 }}>
           <Typography
@@ -147,7 +156,7 @@ export default function SessionCard({ session, now, onCheckout }: Props) {
             <Typography variant="caption" color="#94a3b8">
               Items Total
             </Typography>
-            <Typography fontWeight={700}>{(session.itemsTotalMmk || 0).toLocaleString()} MMK</Typography>
+            <Typography fontWeight={700}>{itemsTotal.toLocaleString()} MMK</Typography>
           </Box>
         </Box>
 
@@ -157,9 +166,9 @@ export default function SessionCard({ session, now, onCheckout }: Props) {
               Products
             </Typography>
             {session.items.map((item) => (
-              <Box key={item.productId} sx={{ display: "flex", justifyContent: "space-between", py: 0.5 }}>
+              <Box key={item.id} sx={{ display: "flex", justifyContent: "space-between", py: 0.5 }}>
                 <Typography variant="body2" sx={{ color: "#cbd5e1" }}>
-                  {item.name} x {item.qty}
+                  {item.productName || `Product ${item.productId}`} x {item.qty}
                 </Typography>
                 <Typography variant="body2" sx={{ color: "#cbd5e1" }}>
                   {item.lineTotalMmk.toLocaleString()} MMK

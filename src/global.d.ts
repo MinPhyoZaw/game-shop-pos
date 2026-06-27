@@ -1,3 +1,5 @@
+/// <reference path="./types/electron.d.ts" />
+
 interface Game {
   id: number;
   name: string;
@@ -27,6 +29,7 @@ interface Station {
 interface SessionItem {
   id: number;
   productId: number;
+  productName?: string;
   qty: number;
   unitPriceMmkSnapshot: number;
   lineTotalMmk: number;
@@ -50,19 +53,10 @@ interface SessionWithDetails {
   station: { id: number; code: string; type: string };
 }
 
-interface Window {
-  api: {
-    games: {
-      getAll: () => Promise<Game[]>;
-    };
-    products: {
-      getAll: () => Promise<Product[]>;
-    };
-    stations: {
-      getAll: () => Promise<Station[]>;
-    };
-    sessions: {
-      getAll: () => Promise<SessionWithDetails[]>;
-    };
-  };
+interface SessionReport {
+  totalIncome: number;
+  playIncome: number;
+  productIncome: number;
+  totalSessions: number;
+  byStation: Record<string, { playIncome: number; productIncome: number; sessions: number }>;
 }
