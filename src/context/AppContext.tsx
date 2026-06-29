@@ -10,7 +10,11 @@ interface AppContextValue {
 
   darkMode: boolean;
   setDarkMode: (value: boolean) => void;
+
+  
 }
+
+
 
 const AppContext = createContext<AppContextValue | undefined>(undefined);
 

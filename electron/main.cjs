@@ -101,16 +101,6 @@ require('electron').ipcMain.handle(
 
 
 
-
-
-
-
-
-
-
-
-
-
 require("electron").ipcMain.handle("products:getAll", async () => {
   const db = getPrisma();
   return await db.product.findMany({
@@ -210,9 +200,17 @@ ipcMain.handle("sessions:finish", async (_, sessionId) => {
   }
 
   const endTime = new Date();
-  const durationMinutes = Math.ceil((endTime - session.startTime) / 60000);
-  const playCostMmk =
-    Math.ceil(durationMinutes / 60) * session.hourlyRateMmkSnapshot;
+
+const elapsedMinutes =
+  (endTime - session.startTime) / 60000;
+
+const durationMinutes =
+  Math.floor(elapsedMinutes);
+
+const playCostMmk = Math.round(
+  (elapsedMinutes / 60) *
+  session.hourlyRateMmkSnapshot
+);
 
   const updated = await db.session.update({
     where: { id: sessionId },
@@ -328,50 +326,122 @@ ipcMain.handle("sessions:getAllWithDetails", async () => {
   return sessions.map(mapSession);
 });
 
-ipcMain.handle("sessions:getReport", async () => {
-  const db = getPrisma();
-  const sessions = await db.session.findMany({
-    where: { status: "finished" },
-    include: sessionInclude,
-  });
+ipcMain.handle(
+  "sessions:getReport",
+  async (_, month, year) => {
+    const db = getPrisma();
 
-  const playIncome = sessions.reduce(
-    (sum, s) => sum + (s.playCostMmk || 0),
-    0
-  );
-  const productIncome = sessions.reduce(
-    (sum, s) =>
-      sum +
-      s.sessionItems.reduce((itemSum, i) => itemSum + i.lineTotalMmk, 0),
-    0
-  );
-  const totalIncome = playIncome + productIncome;
-  const totalSessions = sessions.length;
+    const currentDate = new Date();
 
-  const byStation = sessions.reduce((acc, s) => {
-    const code = s.station.code;
-    if (!acc[code]) {
-      acc[code] = { playIncome: 0, productIncome: 0, sessions: 0 };
+    const selectedMonth =
+      month ?? currentDate.getMonth() + 1;
+
+    const selectedYear =
+      year ?? currentDate.getFullYear();
+
+    let startDate;
+    let endDate;
+
+    // Today report
+    if (selectedMonth === 0) {
+      startDate = new Date(
+        currentDate.getFullYear(),
+        currentDate.getMonth(),
+        currentDate.getDate()
+      );
+
+      endDate = new Date(
+        currentDate.getFullYear(),
+        currentDate.getMonth(),
+        currentDate.getDate() + 1
+      );
     }
-    acc[code].playIncome += s.playCostMmk || 0;
-    acc[code].productIncome += s.sessionItems.reduce(
-      (itemSum, i) => itemSum + i.lineTotalMmk,
+    // Monthly report
+    else {
+      startDate = new Date(
+        selectedYear,
+        selectedMonth - 1,
+        1
+      );
+
+      endDate = new Date(
+        selectedYear,
+        selectedMonth,
+        1
+      );
+    }
+
+    const sessions = await db.session.findMany({
+      where: {
+        status: "finished",
+        endTime: {
+          gte: startDate,
+          lt: endDate,
+        },
+      },
+      include: sessionInclude,
+    });
+
+    const playIncome = sessions.reduce(
+      (sum, s) => sum + (s.playCostMmk || 0),
       0
     );
-    acc[code].sessions += 1;
-    return acc;
-  }, {});
 
-  return {
-    totalIncome,
-    playIncome,
-    productIncome,
-    totalSessions,
-    byStation,
-  };
-});
+    const productIncome = sessions.reduce(
+      (sum, s) =>
+        sum +
+        s.sessionItems.reduce(
+          (itemSum, i) =>
+            itemSum + i.lineTotalMmk,
+          0
+        ),
+      0
+    );
 
+    const totalIncome =
+      playIncome + productIncome;
 
+    const totalSessions =
+      sessions.length;
+
+    const byStation = sessions.reduce(
+      (acc, s) => {
+        const code = s.station.code;
+
+        if (!acc[code]) {
+          acc[code] = {
+            playIncome: 0,
+            productIncome: 0,
+            sessions: 0,
+          };
+        }
+
+        acc[code].playIncome +=
+          s.playCostMmk || 0;
+
+        acc[code].productIncome +=
+          s.sessionItems.reduce(
+            (itemSum, i) =>
+              itemSum + i.lineTotalMmk,
+            0
+          );
+
+        acc[code].sessions += 1;
+
+        return acc;
+      },
+      {}
+    );
+
+    return {
+      totalIncome,
+      playIncome,
+      productIncome,
+      totalSessions,
+      byStation,
+    };
+  }
+);
 app.whenReady().then(() => {
   createWindow();
 

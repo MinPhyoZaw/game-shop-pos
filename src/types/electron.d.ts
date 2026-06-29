@@ -36,6 +36,7 @@ declare global {
       };
       sessions: {
         getAll(): Promise<SessionWithDetails[]>;
+      
         create(data: {
           stationId: number;
           gameId: number;
@@ -43,19 +44,27 @@ declare global {
           hourlyRateMmkSnapshot: number;
           durationMinutes?: number;
         }): Promise<SessionWithDetails>;
+      
         addItem(data: {
           sessionId: number;
           productId: number;
           unitPriceMmk: number;
         }): Promise<SessionItem>;
+      
         changeItemQty(data: {
           sessionId: number;
           productId: number;
           qty: number;
         }): Promise<SessionItem | null>;
+      
         finish(sessionId: number): Promise<SessionWithDetails>;
+      
         getAllWithDetails(): Promise<SessionWithDetails[]>;
-        getReport(): Promise<SessionReport>;
+      
+        getReport(
+          month?: number,
+          year?: number
+        ): Promise<SessionReport>;
       };
     };
   }

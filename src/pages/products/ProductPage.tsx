@@ -166,7 +166,7 @@ const editProduct = (product: Product) => {
   </Card>
 
   {/* Product Rows */}
-  {products.map((product) => (
+  {products.map((product,index) => (
     <Card
       key={product.id}
       sx={{
@@ -193,7 +193,7 @@ const editProduct = (product: Product) => {
       >
         {/* Product ID */}
         <Chip
-          label={`#${product.id}`}
+          label={`${index + 1}`}
           size="small"
           sx={{
             width: "fit-content",

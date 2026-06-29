@@ -1,17 +1,42 @@
 import { useMemo } from "react";
 import type { SessionWithDetails } from "../../context/SessionContext";
 
-export function useSessionCalculations(session: SessionWithDetails, now: number) {
+export function useSessionCalculations(
+  session: SessionWithDetails,
+  now: number
+) {
   return useMemo(() => {
-    const startTime = new Date(session.startTime).getTime();
-    const elapsedMs = now - startTime;
-    const minutes = Math.ceil(elapsedMs / 60000);
-    const playCost =
-      Math.ceil(minutes / 60) * session.hourlyRateMmkSnapshot;
-    const itemsTotal = session.items.reduce((sum, i) => sum + i.lineTotalMmk, 0);
-    const totalAmount = playCost + itemsTotal;
+    const startTime =
+      new Date(session.startTime).getTime();
 
-    return { elapsedMs, minutes, playCost, itemsTotal, totalAmount };
+    const elapsedMs =
+      now - startTime;
+
+    const minutes =
+      Math.floor(elapsedMs / 60000);
+
+    const playCost = Math.round(
+      (minutes / 60) *
+      session.hourlyRateMmkSnapshot
+    );
+
+    const itemsTotal =
+      session.items.reduce(
+        (sum, i) =>
+          sum + i.lineTotalMmk,
+        0
+      );
+
+    const totalAmount =
+      playCost + itemsTotal;
+
+    return {
+      elapsedMs,
+      minutes,
+      playCost,
+      itemsTotal,
+      totalAmount,
+    };
   }, [session, now]);
 }
 

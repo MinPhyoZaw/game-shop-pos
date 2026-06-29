@@ -22,6 +22,24 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+
+.brand-mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: white;
+}
+
+.brand-logo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 @font-face {
   font-family: "PS4Font";
   src: url("./assets/fonts/PhatboyslimBolditalic-2DXw.otf")

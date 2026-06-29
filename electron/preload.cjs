@@ -24,6 +24,11 @@ contextBridge.exposeInMainWorld("api", {
     changeItemQty: (data) => ipcRenderer.invoke("sessions:changeItemQty", data),
     finish: (sessionId) => ipcRenderer.invoke("sessions:finish", sessionId),
     getAllWithDetails: () => ipcRenderer.invoke("sessions:getAllWithDetails"),
-    getReport: () => ipcRenderer.invoke("sessions:getReport"),
+    getReport: (month, year) =>
+      ipcRenderer.invoke(
+        "sessions:getReport",
+        month,
+        year
+      ),
   },
 });

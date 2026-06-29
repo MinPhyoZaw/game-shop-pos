@@ -7,6 +7,7 @@ import {
   Settings,
 } from "lucide-react";
 import { type Page, useApp } from "../../context/AppContext";
+import logo from "../../assets/lotk.png";
 
 const menus = [
   { icon: LayoutDashboard, label: "Dashboard" },
@@ -23,7 +24,13 @@ export default function Sidebar() {
   return (
     <aside className="sidebar">
       <div className="brand">
-        <div className="brand-mark">GS</div>
+      <div className="brand-mark">
+  <img
+    src={logo}
+    alt="TK Family Logo"
+    className="brand-logo"
+  />
+</div>
         <div>
           <h2>TK Family Game  POS </h2>
           <span>Counter console</span>
