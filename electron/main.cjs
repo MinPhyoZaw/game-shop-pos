@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog } = require("electron");
+const { app, BrowserWindow, ipcMain, dialog, net, protocol } = require("electron");
 const { PrismaClient } = require("@prisma/client");
 
 let mainWindow = null;
@@ -8,6 +8,40 @@ const path = require("path");
 const fs = require("fs/promises");
 const { pathToFileURL } = require("url");
 
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: "app-cover",
+    privileges: {
+      standard: true,
+      secure: true,
+      supportFetchAPI: true,
+      corsEnabled: true,
+    },
+  },
+]);
+
+function getCoversDir() {
+  return path.join(app.getPath("appData"), "TK Family Game POS", "covers");
+}
+
+function getCoverUrl(fileName) {
+  return `app-cover://covers/${encodeURIComponent(fileName)}`;
+}
+
+function registerCoverProtocol() {
+  protocol.handle("app-cover", async (request) => {
+    const requestUrl = new URL(request.url);
+
+    if (requestUrl.hostname !== "covers") {
+      return new Response("Not found", { status: 404 });
+    }
+
+    const fileName = path.basename(decodeURIComponent(requestUrl.pathname));
+    const coverPath = path.join(getCoversDir(), fileName);
+
+    return net.fetch(pathToFileURL(coverPath).href);
+  });
+}
 
 function sanitizeFileName(name) {
   return name
@@ -18,7 +52,7 @@ function sanitizeFileName(name) {
 }
 
 async function copyCoverToAppData(sourcePath) {
-  const coversDir = path.join(app.getPath("appData"), "TK Family Game POS", "covers");
+  const coversDir = getCoversDir();
   await fs.mkdir(coversDir, { recursive: true });
 
   const extension = path.extname(sourcePath).toLowerCase() || ".jpg";
@@ -29,7 +63,7 @@ async function copyCoverToAppData(sourcePath) {
   );
 
   await fs.copyFile(sourcePath, destinationPath);
-  return pathToFileURL(destinationPath).href;
+  return getCoverUrl(path.basename(destinationPath));
 }
 
 function getPrisma() {
@@ -513,6 +547,7 @@ ipcMain.handle(
   }
 );
 app.whenReady().then(() => {
+  registerCoverProtocol();
   createWindow();
 
   app.on("activate", () => {

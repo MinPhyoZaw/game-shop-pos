@@ -17,6 +17,8 @@ interface Game {
   coverImage: string | null;
 }
 
+const defaultCoverImage = "/game-covers/default.jpg";
+
 export default function GamesPage() {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
@@ -151,11 +153,7 @@ export default function GamesPage() {
               borderRadius: 4,
               overflow: "hidden",
               cursor: "pointer",
-
-              backgroundImage: `url(${game.coverImage || "/game-covers/default.jpg"})`,
-
-              backgroundSize: "cover",
-              backgroundPosition: "center",
+              bgcolor: "grey.200",
 
               transition: "all 0.25s ease",
 
@@ -165,6 +163,21 @@ export default function GamesPage() {
               },
             }}
           >
+            <Box
+              component="img"
+              src={game.coverImage || defaultCoverImage}
+              alt={`${game.name} cover`}
+              onError={(event) => {
+                event.currentTarget.src = defaultCoverImage;
+              }}
+              sx={{
+                position: "absolute",
+                inset: 0,
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+              }}
+            />
             <Box
               sx={{
                 position: "absolute",
