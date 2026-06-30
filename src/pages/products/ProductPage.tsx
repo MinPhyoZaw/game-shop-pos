@@ -13,8 +13,8 @@ import {
 import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
-import { useEffect, useMemo, useState } from "react";
-import { getProducts, createProduct,  deleteProduct as deleteProductService,updateProduct ,type Product } from "../../services/productService";
+import { useEffect,  useState } from "react";
+import { getProducts, createProduct,  deleteProduct as deleteProductService, updateProduct ,type Product } from "../../services/productService";
 
 type ProductForm = {
   id?: number;
@@ -158,10 +158,10 @@ const editProduct = (product: Product) => {
         py: 2,
       }}
     >
-      <Typography fontWeight={700}>ID</Typography>
-      <Typography fontWeight={700}>Product Name</Typography>
-      <Typography fontWeight={700}>Price</Typography>
-      <Typography fontWeight={700}>Actions</Typography>
+      <Typography sx={{fontWeight:700}}>ID</Typography>
+      <Typography sx={{fontWeight:700}}>Product Name</Typography>
+      <Typography sx={{fontWeight:700}}>Price</Typography>
+      <Typography sx={{fontWeight:700}}>Actions</Typography>
     </Box>
   </Card>
 

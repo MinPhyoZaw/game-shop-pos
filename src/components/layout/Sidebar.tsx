@@ -7,7 +7,7 @@ import {
   Settings,
 } from "lucide-react";
 import { type Page, useApp } from "../../context/AppContext";
-import logo from "../../assets/lotk.png";
+import logo from "../../assets/logo1.jpg";
 
 const menus = [
   { icon: LayoutDashboard, label: "Dashboard" },
