@@ -1,11 +1,36 @@
-const { app, BrowserWindow, ipcMain } = require("electron");
+const { app, BrowserWindow, ipcMain, dialog } = require("electron");
 const { PrismaClient } = require("@prisma/client");
 
 let mainWindow = null;
 let prisma = null;
 
 const path = require("path");
-const { electron } = require("process");
+const fs = require("fs/promises");
+const { pathToFileURL } = require("url");
+
+
+function sanitizeFileName(name) {
+  return name
+    .toLowerCase()
+    .replace(/\.[^/.]+$/, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "") || "game-cover";
+}
+
+async function copyCoverToAppData(sourcePath) {
+  const coversDir = path.join(app.getPath("appData"), "TK Family Game POS", "covers");
+  await fs.mkdir(coversDir, { recursive: true });
+
+  const extension = path.extname(sourcePath).toLowerCase() || ".jpg";
+  const baseName = sanitizeFileName(path.basename(sourcePath));
+  const destinationPath = path.join(
+    coversDir,
+    `${Date.now()}-${baseName}${extension}`
+  );
+
+  await fs.copyFile(sourcePath, destinationPath);
+  return pathToFileURL(destinationPath).href;
+}
 
 function getPrisma() {
   if (!prisma) {
@@ -35,6 +60,23 @@ function createWindow() {
 }
 
 // Register IPC handlers
+
+require("electron").ipcMain.handle("games:chooseCover", async () => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    title: "Choose game cover",
+    properties: ["openFile"],
+    filters: [
+      { name: "Images", extensions: ["jpg", "jpeg", "png", "webp", "gif"] },
+    ],
+  });
+
+  if (result.canceled || result.filePaths.length === 0) {
+    return null;
+  }
+
+  return await copyCoverToAppData(result.filePaths[0]);
+});
+
 require("electron").ipcMain.handle("games:getAll", async () => {
   const db = getPrisma();
   return await db.game.findMany({

@@ -10,6 +10,7 @@ declare global {
           coverImage?: string;
           platform?: string;
         }): Promise<Game>;
+        chooseCover(): Promise<string | null>;
         update(data: {
           id: number;
           name: string;
