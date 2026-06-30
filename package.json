@@ -2,7 +2,7 @@
   "name": "tk-family-pos",
   "private": true,
   "version": "0.0.0",
-    "main": "electron/main.cjs",
+  "main": "electron/main.cjs",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -19,6 +19,7 @@
     "@mui/material": "^9.1.1",
     "@prisma/client": "^6.19.3",
     "electron": "^42.4.1",
+    "fs-extra": "^11.3.6",
     "lucide-react": "^1.21.0",
     "prisma": "^6.19.3",
     "react": "^19.2.6",
