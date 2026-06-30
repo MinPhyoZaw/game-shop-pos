@@ -153,6 +153,34 @@ require("electron").ipcMain.handle("stations:getAll", async () => {
   });
 });
 
+ipcMain.handle("stations:updateRatesByType", async (_, ratesByType) => {
+  const db = getPrisma();
+  const updates = Object.entries(ratesByType).flatMap(([type, hourlyRateMmk]) => {
+    const rate = Number(hourlyRateMmk) || 0;
+
+    return [
+      db.station.updateMany({
+        where: { type, isActive: true },
+        data: { hourlyRateMmk: rate },
+      }),
+      db.session.updateMany({
+        where: {
+          status: "running",
+          station: { type },
+        },
+        data: { hourlyRateMmkSnapshot: rate },
+      }),
+    ];
+  });
+
+  await db.$transaction(updates);
+
+  return await db.station.findMany({
+    where: { isActive: true },
+    orderBy: { code: "asc" },
+  });
+});
+
 
 
 const sessionInclude = {
