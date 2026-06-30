@@ -51,6 +51,9 @@ function createWindow() {
       preload: preloadPath,
       contextIsolation: true,
       nodeIntegration: false,
+ 
+      //allow local file access
+      webSecurity:false,
     },
   });
 
