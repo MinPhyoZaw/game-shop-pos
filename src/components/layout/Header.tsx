@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
+import { useApp } from "../../context/AppContext";
 
 export default function Header() {
   const [now, setNow] = useState(() => new Date());
+  const { shopSettings } = useApp();
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 1000);
@@ -12,7 +14,7 @@ export default function Header() {
     <header className="topbar">
       <div className="cashier-card">
         <span>Cashier</span>
-        <strong>Zin Min Oo</strong>
+        <strong>{shopSettings.cashierName}</strong>
       </div>
 
       {/* Brand */}
@@ -33,7 +35,7 @@ export default function Header() {
             color: "#1976d2",
           }}
         >
-          🎮 TKFamily Game Zone
+          🎮 {shopSettings.shopName}
         </h2>
       </div>
 

@@ -16,6 +16,8 @@ contextBridge.exposeInMainWorld("api", {
   },
   stations: {
     getAll: () => ipcRenderer.invoke("stations:getAll"),
+    updateRatesByType: (ratesByType) =>
+      ipcRenderer.invoke("stations:updateRatesByType", ratesByType),
   },
   sessions: {
     getAll: () => ipcRenderer.invoke("sessions:getAll"),

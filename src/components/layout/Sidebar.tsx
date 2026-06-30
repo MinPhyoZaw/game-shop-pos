@@ -19,7 +19,7 @@ const menus = [
 ];
 
 export default function Sidebar() {
-  const { page, setPage } = useApp();
+  const { page, setPage, shopSettings } = useApp();
 
   return (
     <aside className="sidebar">
@@ -32,7 +32,7 @@ export default function Sidebar() {
   />
 </div>
         <div>
-          <h2>TK Family Game  POS </h2>
+          <h2>{shopSettings.shopName} POS</h2>
           <span>Counter console</span>
         </div>
       </div>

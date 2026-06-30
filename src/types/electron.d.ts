@@ -33,6 +33,7 @@ declare global {
       };
       stations: {
         getAll(): Promise<Station[]>;
+        updateRatesByType(ratesByType: Record<string, number>): Promise<Station[]>;
       };
       sessions: {
         getAll(): Promise<SessionWithDetails[]>;
