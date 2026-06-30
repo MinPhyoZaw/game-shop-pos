@@ -59,7 +59,8 @@ export default function ReportPage() {
   ];
 
   return (
-    <Box>
+    <Box 
+    >
       <Box>
         <Typography variant="h4" fontWeight={700}>
           Reports
